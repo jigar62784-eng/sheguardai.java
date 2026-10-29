@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency SOS Alert — SheGuard</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="container nav-container">
+      <a href="dashboard.html" class="brand">
+        <div class="brand-icon" style="background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+        <span class="brand-tag" style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); color: #FCA5A5;">SOS ACTIVE</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+          <li><a href="family-locator.html" class="nav-link">Family Locator</a></li>
+          <li><a href="trusted-contacts.html" class="nav-link">Contacts</a></li>
+          <li><a href="emergency.html" class="nav-link active" style="color: #EF4444;">SOS Emergency</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions"></div>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="sos-container">
+      <h1 style="font-size: var(--font-size-3xl); color: #fff; margin-bottom: var(--space-2);">
+        Emergency Distress Center
+      </h1>
+      <p style="color: var(--text-secondary); font-size: var(--font-size-sm); max-width: 540px; margin: 0 auto;">
+        Triggering SOS broadcasts your immediate GPS coordinates, distress message, and emergency details to your configured emergency contacts.
+      </p>
+
+      <!-- Gigantic Circular SOS Button -->
+      <div id="sosButton" class="sos-trigger-circle" role="button" tabindex="0" aria-label="Trigger Emergency SOS">
+        <div id="sosButtonContent">
+          <span style="font-size: 52px; line-height: 1;">🚨</span>
+          <span style="font-size: 28px; letter-spacing: 0.1em; margin-top: 4px;">SOS</span>
+        </div>
+        <div id="countdownDisplayWrapper" style="display: none; text-align: center;">
+          <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.8);">Sending in</div>
+          <div id="countdownNumber" class="countdown-timer-display">5</div>
+        </div>
+      </div>
+
+      <!-- Cancel Countdown Control -->
+      <div id="sosCancelControl" style="display: none; margin-bottom: var(--space-6);">
+        <button id="cancelSosBtn" class="btn btn-secondary btn-lg" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); font-size: 1.1rem; padding: 0.8rem 2.5rem;">
+          ❌ Cancel Countdown (False Alarm)
+        </button>
+      </div>
+
+      <!-- Alert Dispatch Status Banner -->
+      <div id="sosDispatchStatus" class="alert" style="display: none; text-align: left; margin: 0 auto var(--space-6); max-width: 580px;"></div>
+
+      <!-- Pre-Flight Verification Info -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); text-align: left; margin-bottom: var(--space-8);">
+        <!-- Current Location Box -->
+        <div class="card" style="padding: var(--space-4);">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--accent-cyan); font-weight: bold; margin-bottom: 6px;">
+            📍 Target GPS Coordinates
+          </div>
+          <div id="sosLocationPreview" style="font-size: 13px; color: #E2E8F0;">
+            <span class="spinner"></span> Acquiring satellite fix...
+          </div>
+        </div>
+
+        <!-- Recipient Contacts Box -->
+        <div class="card" style="padding: var(--space-4);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 11px; text-transform: uppercase; color: var(--primary-purple); font-weight: bold;">
+              👥 Emergency Notification Recipients
+            </span>
+            <a href="trusted-contacts.html" style="font-size: 11px; color: var(--accent-cyan);">Edit</a>
+          </div>
+          <div id="sosContactsList" style="max-height: 120px; overflow-y: auto;">
+            <span class="spinner"></span> Loading contacts...
+          </div>
+        </div>
+      </div>
+
+      <!-- Verified National Hotlines (Immediate Direct Dial) -->
+      <div class="card" style="text-align: left; margin-bottom: var(--space-8); border-color: rgba(239, 68, 68, 0.3);">
+        <h3 style="font-size: var(--font-size-base); color: #fff; margin-bottom: var(--space-3); display: flex; align-items: center; gap: 8px;">
+          <span>📞</span> One-Touch Verified Emergency Lines
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3);">
+          <a href="tel:112" class="btn btn-secondary" style="justify-content: space-between; border-color: rgba(239, 68, 68, 0.4);">
+            <span>National Emergency</span>
+            <strong style="color: #EF4444; font-family: monospace;">112</strong>
+          </a>
+          <a href="tel:1091" class="btn btn-secondary" style="justify-content: space-between; border-color: rgba(239, 68, 68, 0.4);">
+            <span>Women Helpline</span>
+            <strong style="color: #EF4444; font-family: monospace;">1091</strong>
+          </a>
+          <a href="tel:1930" class="btn btn-secondary" style="justify-content: space-between; border-color: rgba(239, 68, 68, 0.4);">
+            <span>Cyber Crime</span>
+            <strong style="color: #EF4444; font-family: monospace;">1930</strong>
+          </a>
+        </div>
+      </div>
+
+      <!-- Past Emergency Alerts Log -->
+      <div class="card" style="text-align: left;">
+        <h3 class="card-title" style="margin-bottom: var(--space-4);">Prior Alert Dispatch History</h3>
+        <div id="sosHistoryList">
+          <div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 12px;">
+            Loading alert history...
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth } from './js/guards.js';
+    import { emergencyController } from './js/emergency.js';
+    import { showToast, escapeHtml } from './js/ui.js';
+
+    await requireAuth();
+    await emergencyController.init();
+
+    const sosBtn = document.getElementById('sosButton');
+    const btnContent = document.getElementById('sosButtonContent');
+    const countdownWrapper = document.getElementById('countdownDisplayWrapper');
+    const countdownNumber = document.getElementById('countdownNumber');
+    const cancelControl = document.getElementById('sosCancelControl');
+    const cancelBtn = document.getElementById('cancelSosBtn');
+    const statusBox = document.getElementById('sosDispatchStatus');
+
+    let isCountingDown = false;
+
+    // Trigger SOS Click
+    sosBtn.addEventListener('click', () => {
+      if (isCountingDown) return;
+      isCountingDown = true;
+
+      // Switch to countdown mode
+      btnContent.style.display = 'none';
+      countdownWrapper.style.display = 'block';
+      cancelControl.style.display = 'block';
+      sosBtn.classList.add('countdown-active');
+      statusBox.style.display = 'none';
+
+      emergencyController.startCountdown(
+        // On tick
+        (secondsLeft) => {
+          countdownNumber.textContent = secondsLeft;
+        },
+        // On complete
+        async () => {
+          resetCountdownUI();
+          await executeDispatch();
+        },
+        // On cancel
+        () => {
+          resetCountdownUI();
+        }
+      );
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      emergencyController.cancelCountdown();
+      resetCountdownUI();
+      showToast('SOS countdown cancelled. No alert was sent.', 'info');
+    });
+
+    function resetCountdownUI() {
+      isCountingDown = false;
+      btnContent.style.display = 'block';
+      countdownWrapper.style.display = 'none';
+      cancelControl.style.display = 'none';
+      sosBtn.classList.remove('countdown-active');
+    }
+
+    async function executeDispatch() {
+      statusBox.className = 'alert alert-info';
+      statusBox.innerHTML = `
+        <span class="spinner"></span> 
+        <strong>Dispatching Emergency SOS:</strong> Transmitting coordinates and alert payloads to backend...
+      `;
+      statusBox.style.display = 'block';
+
+      try {
+        const result = await emergencyController.dispatchAlert();
+        statusBox.className = 'alert alert-success';
+        statusBox.innerHTML = `
+          <strong>🚨 SOS ALERT DISPATCHED SUCCESSFULLY!</strong><br>
+          Official Tracking Reference: <strong style="font-family: monospace; color: #fff;">${escapeHtml(result.alertReference || 'N/A')}</strong><br>
+          Distress notifications have been sent to your configured emergency contacts. Provider status: <strong>${escapeHtml(result.status || 'SENT')}</strong>.
+        `;
+        showToast('SOS Alert Dispatched!', 'danger', 6000);
+        await emergencyController.loadPastAlerts();
+      } catch (err) {
+        statusBox.className = 'alert alert-danger';
+        statusBox.innerHTML = `
+          <strong>SOS Transmission Error:</strong> ${escapeHtml(err.message)}<br>
+          If you are in immediate physical danger, dial <strong>112</strong> or <strong>1091</strong> directly from your phone now.
+        `;
+        showToast('Emergency alert transmission failed: ' + err.message, 'danger');
+      }
+    }
+  </script>
+</body>
+</html>

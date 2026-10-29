@@ -1,0 +1,18 @@
+{
+  "name": "sheguard",
+  "version": "1.0.0",
+  "description": "SheGuard — Women Safety Incident Reporting System & Live Family Locator",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js 5500",
+    "test": "node tests/unit-tests.js && node tests/verify-pages.js && node tests/http-tests.js"
+  },
+  "keywords": [
+    "women-safety",
+    "incident-reporting",
+    "family-locator",
+    "emergency-sos"
+  ],
+  "author": "SheGuard Team",
+  "license": "UNLICENSED"
+}

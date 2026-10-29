@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email — SheGuard</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+      </a>
+
+      <div class="nav-actions">
+        <a href="dashboard.html" class="btn btn-secondary btn-sm">Skip to Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="auth-wrapper">
+      <div class="auth-card" style="text-align: center;">
+        <div style="font-size: 48px; margin-bottom: var(--space-4);">✉️</div>
+        <h1 class="auth-title">Verify Your Email</h1>
+        <p style="margin-bottom: var(--space-6);">
+          We sent a confirmation link to <strong id="verifyUserEmail" style="color: #fff;">your email</strong>. Please click the link in your inbox to complete verification.
+        </p>
+
+        <div id="verifyAlert" class="alert alert-info" style="display: none;" role="status"></div>
+
+        <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-6);">
+          <button id="checkStatusBtn" class="btn btn-primary">
+            <span>I've Verified, Continue</span>
+          </button>
+          <button id="resendBtn" class="btn btn-outline">
+            <span>Resend Verification Email</span>
+          </button>
+          <a href="dashboard.html" class="btn btn-secondary">Go to Dashboard</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { authService } from './js/auth.js';
+    import { showToast } from './js/ui.js';
+
+    const user = await authService.waitForAuth();
+    const emailEl = document.getElementById('verifyUserEmail');
+    const alertBox = document.getElementById('verifyAlert');
+    const checkBtn = document.getElementById('checkStatusBtn');
+    const resendBtn = document.getElementById('resendBtn');
+
+    if (user && user.email) {
+      emailEl.textContent = user.email;
+    }
+
+    checkBtn.addEventListener('click', async () => {
+      if (!authService.currentUser) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      checkBtn.disabled = true;
+      checkBtn.innerHTML = `<span class="spinner"></span> Checking...`;
+
+      try {
+        await authService.currentUser.reload();
+        if (authService.currentUser.emailVerified) {
+          showToast('Email verified successfully! Redirecting...', 'success');
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 1000);
+        } else {
+          alertBox.className = 'alert alert-warning';
+          alertBox.textContent = 'Your email is not verified yet. Please check your inbox and click the verification link.';
+          alertBox.style.display = 'block';
+          checkBtn.disabled = false;
+          checkBtn.innerHTML = `<span>I've Verified, Continue</span>`;
+        }
+      } catch (err) {
+        alertBox.className = 'alert alert-danger';
+        alertBox.textContent = err.message;
+        alertBox.style.display = 'block';
+        checkBtn.disabled = false;
+        checkBtn.innerHTML = `<span>I've Verified, Continue</span>`;
+      }
+    });
+
+    resendBtn.addEventListener('click', async () => {
+      resendBtn.disabled = true;
+      try {
+        await authService.resendVerification();
+        alertBox.className = 'alert alert-success';
+        alertBox.textContent = 'Verification email resent. Please check your spam folder if not received in 2 minutes.';
+        alertBox.style.display = 'block';
+      } catch (err) {
+        alertBox.className = 'alert alert-danger';
+        alertBox.textContent = err.message;
+        alertBox.style.display = 'block';
+      } finally {
+        setTimeout(() => { resendBtn.disabled = false; }, 5000);
+      }
+    });
+  </script>
+</body>
+</html>

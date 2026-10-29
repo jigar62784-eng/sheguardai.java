@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Reports — SheGuard</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="container nav-container">
+      <a href="dashboard.html" class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+          <li><a href="safety-map.html" class="nav-link">Safety Map</a></li>
+          <li><a href="report-incident.html" class="nav-link">Report Incident</a></li>
+          <li><a href="my-reports.html" class="nav-link active">My Reports</a></li>
+          <li><a href="family-locator.html" class="nav-link">Family Locator</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions"></div>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; gap: var(--space-4);">
+      <div>
+        <h1 style="font-size: var(--font-size-3xl); margin-bottom: var(--space-1);">My Incident Reports</h1>
+        <p style="color: var(--text-secondary); font-size: var(--font-size-sm);">
+          Track verification progress and review feedback from authorized moderators.
+        </p>
+      </div>
+      <a href="report-incident.html" class="btn btn-primary">
+        <span>+ File New Report</span>
+      </a>
+    </div>
+
+    <!-- Reports Container -->
+    <div class="card">
+      <div id="reportsListContainer">
+        <div style="text-align: center; padding: var(--space-8); color: var(--text-muted);">
+          <span class="spinner"></span> Loading your reports...
+        </div>
+      </div>
+    </div>
+
+    <!-- Report Details Modal -->
+    <div id="reportDetailModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modalDetailRef">Report Details</h3>
+          <button class="modal-close" id="closeDetailModal" aria-label="Close dialog">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+            <span id="modalDetailCategory" style="font-weight: bold; font-size: 1.1rem; color: #fff;"></span>
+            <span id="modalDetailStatusBadge" class="badge"></span>
+          </div>
+
+          <div style="font-size: 13px; color: var(--text-muted); margin-bottom: var(--space-4);" id="modalDetailDate"></div>
+
+          <div class="form-group">
+            <label class="form-label">Location</label>
+            <div id="modalDetailLocation" style="color: var(--text-primary); font-size: 14px;"></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Full Incident Description</label>
+            <div id="modalDetailDesc" style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; font-size: 14px; white-space: pre-wrap; color: #CBD5E1;"></div>
+          </div>
+
+          <div class="form-group" id="modalReviewerNotesGroup" style="display: none;">
+            <label class="form-label" style="color: #38BDF8;">Official Moderator Feedback</label>
+            <div id="modalDetailNotes" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 12px; border-radius: 8px; font-size: 13px; color: #E0F2FE;"></div>
+          </div>
+
+          <div class="form-group" id="modalEvidenceSection">
+            <label class="form-label">Attached Evidence</label>
+            <div id="modalEvidenceInfo" style="font-size: 13px; color: var(--text-secondary);"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="modalCloseFooterBtn">Close</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth } from './js/guards.js';
+    import { reportsService } from './js/reports.js';
+    import { openModal, closeModal, renderEmptyState, escapeHtml, formatDateTime } from './js/ui.js';
+
+    await requireAuth();
+
+    const container = document.getElementById('reportsListContainer');
+    let loadedReports = [];
+
+    async function loadReports() {
+      try {
+        const reports = await reportsService.getMyReports();
+        loadedReports = reports || [];
+
+        if (loadedReports.length === 0) {
+          renderEmptyState(
+            container,
+            'No Incident Reports Found',
+            'You have not submitted any incident reports. If you encounter harassment or an unsafe situation, file a report to document it securely.',
+            '📂',
+            '<a href="report-incident.html" class="btn btn-primary btn-sm">Report an Incident</a>'
+          );
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Tracking Reference</th>
+                  <th>Category</th>
+                  <th>Incident Date</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                  <th>Submitted At</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${loadedReports.map(r => {
+                  const meta = reportsService.getStatusMeta(r.status);
+                  const cat = reportsService.getCategoryLabel(r.category);
+                  return `
+                    <tr>
+                      <td><strong style="font-family: monospace; color: var(--accent-cyan);">${escapeHtml(r.reference)}</strong></td>
+                      <td>${escapeHtml(cat)}</td>
+                      <td>${escapeHtml(r.incidentDate || 'N/A')}</td>
+                      <td>${escapeHtml(r.location?.address || `${r.location?.latitude?.toFixed(3)}, ${r.location?.longitude?.toFixed(3)}`)}</td>
+                      <td><span class="badge ${meta.badgeClass}">${escapeHtml(meta.label)}</span></td>
+                      <td style="font-size: 12px; color: #94A3B8;">${formatDateTime(r.createdAt)}</td>
+                      <td>
+                        <button class="btn btn-secondary btn-sm view-detail-btn" data-ref="${escapeHtml(r.reference)}" style="font-size: 11px;">
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        container.querySelectorAll('.view-detail-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            showDetails(btn.dataset.ref);
+          });
+        });
+      } catch (err) {
+        container.innerHTML = `
+          <div class="alert alert-warning">
+            Unable to fetch reports: ${escapeHtml(err.message)}
+          </div>
+        `;
+      }
+    }
+
+    function showDetails(ref) {
+      const report = loadedReports.find(r => r.reference === ref);
+      if (!report) return;
+
+      const meta = reportsService.getStatusMeta(report.status);
+      document.getElementById('modalDetailRef').textContent = `Report #${report.reference}`;
+      document.getElementById('modalDetailCategory').textContent = reportsService.getCategoryLabel(report.category);
+      
+      const badge = document.getElementById('modalDetailStatusBadge');
+      badge.className = `badge ${meta.badgeClass}`;
+      badge.textContent = meta.label;
+
+      document.getElementById('modalDetailDate').textContent = `Occurred on: ${report.incidentDate || 'N/A'} ${report.incidentTime || ''}`;
+      document.getElementById('modalDetailLocation').textContent = report.location?.address 
+        ? `${report.location.address} (Coords: ${report.location.latitude}, ${report.location.longitude})`
+        : `Lat: ${report.location?.latitude}, Lon: ${report.location?.longitude}`;
+      document.getElementById('modalDetailDesc').textContent = report.description || 'No description';
+
+      // Notes
+      const notesGroup = document.getElementById('modalReviewerNotesGroup');
+      if (report.reviewNotes) {
+        notesGroup.style.display = 'block';
+        document.getElementById('modalDetailNotes').textContent = report.reviewNotes;
+      } else {
+        notesGroup.style.display = 'none';
+      }
+
+      // Evidence
+      const evidenceInfo = document.getElementById('modalEvidenceInfo');
+      if (report.evidenceUrl) {
+        evidenceInfo.innerHTML = `
+          <a href="${escapeHtml(report.evidenceUrl)}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+            🔒 View Encrypted Evidence File
+          </a>
+        `;
+      } else {
+        evidenceInfo.textContent = 'No evidence files were attached to this report.';
+      }
+
+      openModal('reportDetailModal');
+    }
+
+    document.getElementById('closeDetailModal').addEventListener('click', () => closeModal('reportDetailModal'));
+    document.getElementById('modalCloseFooterBtn').addEventListener('click', () => closeModal('reportDetailModal'));
+
+    loadReports();
+  </script>
+</body>
+</html>

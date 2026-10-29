@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings & Privacy — SheGuard</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="container nav-container">
+      <a href="dashboard.html" class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+          <li><a href="family-locator.html" class="nav-link">Family Locator</a></li>
+          <li><a href="trusted-contacts.html" class="nav-link">Contacts</a></li>
+          <li><a href="settings.html" class="nav-link active">Settings</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions"></div>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content container container-narrow">
+    <h1 style="font-size: var(--font-size-3xl); margin-bottom: var(--space-2);">Settings & Privacy Center</h1>
+    <p style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-8);">
+      Control your profile information, manage master location sharing consent, and manage your privacy rights.
+    </p>
+
+    <!-- Profile Information Form -->
+    <div class="card" style="margin-bottom: var(--space-6);">
+      <h2 class="card-title">Profile Information</h2>
+      <form id="settingsProfileForm" novalidate>
+        <div class="form-group">
+          <label for="settingsDisplayName" class="form-label">Full Name</label>
+          <input type="text" id="settingsDisplayName" class="form-control" placeholder="Your name">
+        </div>
+
+        <div class="form-group">
+          <label for="settingsEmail" class="form-label">Registered Email</label>
+          <input type="email" id="settingsEmail" class="form-control" disabled style="opacity: 0.7; cursor: not-allowed;">
+          <div class="form-hint">Email address cannot be changed directly for security audit reasons.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="settingsPhone" class="form-label">Emergency Phone Number</label>
+          <input type="tel" id="settingsPhone" class="form-control" placeholder="+1234567890">
+        </div>
+
+        <div class="form-group">
+          <label for="settingsMedicalNotes" class="form-label">Emergency Medical / Safety Notes (Optional)</label>
+          <textarea id="settingsMedicalNotes" class="form-textarea" placeholder="e.g. Blood type O+, Asthma inhaler in bag, Allergies to penicillin..." style="min-height: 80px;"></textarea>
+          <div class="form-hint">Disclosed only during active SOS alerts to verified responders and emergency contacts.</div>
+        </div>
+
+        <div class="card-footer" style="padding-bottom: 0;">
+          <button type="submit" class="btn btn-primary" id="saveProfileBtn">Save Profile Changes</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Location & Privacy Controls -->
+    <div class="card" style="margin-bottom: var(--space-6);">
+      <h2 class="card-title">Master Location & Privacy Controls</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-subtle);">
+        <div>
+          <strong style="color: #fff; font-size: 14px;">Master Location Sharing</strong>
+          <p style="font-size: 12px; margin: 2px 0 0; color: var(--text-secondary);">
+            Allow authorized family circle members to view your live GPS position on the Family Locator map.
+          </p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="settingsLocationSharing" checked>
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+        <div>
+          <strong style="color: #fff; font-size: 14px;">Email Incident Status Alerts</strong>
+          <p style="font-size: 12px; margin: 2px 0 0; color: var(--text-secondary);">
+            Receive email notifications when a moderator verifies or updates your filed reports.
+          </p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="settingsEmailNotif" checked>
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Data Portability & Rights -->
+    <div class="card" style="margin-bottom: var(--space-6);">
+      <h2 class="card-title">Data Privacy & Portability</h2>
+      <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: var(--space-4);">
+        Under global privacy standards, you have the right to export your complete data archive or request permanent erasure.
+      </p>
+
+      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+        <button id="exportUserDataBtn" class="btn btn-secondary btn-sm">
+          📥 Download My Personal Data Archive (JSON)
+        </button>
+      </div>
+    </div>
+
+    <!-- Terms and Policy Information -->
+    <div class="card" style="margin-bottom: var(--space-6);">
+      <h2 class="card-title">Legal & Security Compliance</h2>
+      <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;" id="privacy">
+        <h4 style="color: #fff; margin-bottom: 4px;">Privacy Commitment</h4>
+        <p style="margin-bottom: var(--space-4);">
+          SheGuard does not monetize, sell, or profile your personal data. All GPS coordinates broadcasted to the Public Safety Map are intentionally fuzzed by approximately 500 meters to ensure home and workplace anonymity. Exact coordinates are shared strictly with mutually consented family circle members and verified emergency responders during active SOS distress calls.
+        </p>
+
+        <h4 style="color: #fff; margin-bottom: 4px;" id="terms">Terms of Service</h4>
+        <p>
+          SheGuard is designed as an auxiliary safety and reporting system. In an active, life-threatening emergency, users should always dial official emergency services (112 or local police) directly whenever physically safe to do so.
+        </p>
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="card" style="border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.04);">
+      <h2 class="card-title" style="color: #EF4444;">Danger Zone</h2>
+      <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: var(--space-4);">
+        Permanently delete your user account, delete your personal profile, and revoke all family links from the database.
+      </p>
+      <button id="deleteAccountBtn" class="btn btn-danger btn-sm">
+        Permanently Delete My SheGuard Account
+      </button>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth } from './js/guards.js';
+    import { settingsController } from './js/settings.js';
+
+    await requireAuth();
+    await settingsController.init();
+
+    document.getElementById('settingsProfileForm').addEventListener('submit', async (e) => {
+      await settingsController.saveProfile(e);
+    });
+
+    document.getElementById('settingsLocationSharing').addEventListener('change', async (e) => {
+      await settingsController.toggleMasterLocationSharing(e.target.checked);
+    });
+
+    document.getElementById('exportUserDataBtn').addEventListener('click', async () => {
+      await settingsController.exportUserData();
+    });
+
+    document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+      await settingsController.deleteAccount();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Maven Wrapper for Linux/macOS
+# ----------------------------------------------------------------------------
+
+set -e
+DIRNAME="$(cd "$(dirname "$0")" && pwd)"
+MAVEN_VERSION="3.9.9"
+MAVEN_HOME="$HOME/.m2/wrapper/dists/apache-maven-$MAVEN_VERSION"
+
+if [ -f "$MAVEN_HOME/bin/mvn" ]; then
+    exec "$MAVEN_HOME/bin/mvn" "$@"
+fi
+
+echo "[SheGuard] Setting up Maven $MAVEN_VERSION..."
+mkdir -p "$HOME/.m2/wrapper/dists"
+TMP_ZIP="/tmp/apache-maven-$MAVEN_VERSION.zip"
+curl -sSL "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/$MAVEN_VERSION/apache-maven-$MAVEN_VERSION-bin.zip" -o "$TMP_ZIP"
+unzip -q -o "$TMP_ZIP" -d "$HOME/.m2/wrapper/dists"
+rm -f "$TMP_ZIP"
+
+exec "$MAVEN_HOME/bin/mvn" "$@"

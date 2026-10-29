@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — SheGuard</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <a href="#registerForm" class="skip-link">Skip to registration form</a>
+
+  <header class="app-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+      </a>
+
+      <div class="nav-actions">
+        <a href="login.html" class="btn btn-secondary btn-sm">Already a member? Log in</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="auth-wrapper">
+      <div class="auth-card" style="max-width: 480px;">
+        <div class="auth-header">
+          <h1 class="auth-title">Create Account</h1>
+          <p>Join SheGuard to access live family protection, emergency SOS, and secure incident tracking.</p>
+        </div>
+
+        <div id="registerAlert" class="alert alert-danger" style="display: none;" role="alert"></div>
+
+        <form id="registerForm" novalidate>
+          <div class="form-group">
+            <label for="regName" class="form-label">Full Name <span class="required">*</span></label>
+            <input type="text" id="regName" class="form-control" required placeholder="Jane Doe" autocomplete="name">
+          </div>
+
+          <div class="form-group">
+            <label for="regEmail" class="form-label">Email Address <span class="required">*</span></label>
+            <input type="email" id="regEmail" class="form-control" required placeholder="name@example.com" autocomplete="email">
+          </div>
+
+          <div class="form-group">
+            <label for="regPhone" class="form-label">Emergency Mobile Number (SMS Alerts)</label>
+            <input type="tel" id="regPhone" class="form-control" placeholder="+1234567890" autocomplete="tel">
+            <div class="form-hint">Used for SOS notifications and verification.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="regPassword" class="form-label">Password <span class="required">*</span></label>
+            <input type="password" id="regPassword" class="form-control" required placeholder="Minimum 6 characters" autocomplete="new-password">
+          </div>
+
+          <div class="form-group">
+            <label for="regConfirmPassword" class="form-label">Confirm Password <span class="required">*</span></label>
+            <input type="password" id="regConfirmPassword" class="form-control" required placeholder="Re-enter password" autocomplete="new-password">
+          </div>
+
+          <div class="form-group">
+            <label class="form-check">
+              <input type="checkbox" id="regTerms" required>
+              <span class="form-check-label">
+                I agree to the <a href="settings.html#terms" target="_blank">Terms of Service</a> and acknowledge the <a href="settings.html#privacy" target="_blank">Privacy Policy</a>. I understand my data is protected and never sold.
+              </span>
+            </label>
+          </div>
+
+          <button type="submit" id="registerSubmitBtn" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem;">
+            <span>Create Protected Account</span>
+          </button>
+        </form>
+
+        <div class="auth-footer">
+          Already registered? <a href="login.html">Sign in here</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireGuest } from './js/guards.js';
+    import { authService } from './js/auth.js';
+    import { showToast } from './js/ui.js';
+
+    await requireGuest();
+
+    const form = document.getElementById('registerForm');
+    const alertBox = document.getElementById('registerAlert');
+    const submitBtn = document.getElementById('registerSubmitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const phone = document.getElementById('regPhone').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const confirmPassword = document.getElementById('regConfirmPassword').value;
+      const termsAccepted = document.getElementById('regTerms').checked;
+
+      if (!name || !email || !password) {
+        alertBox.textContent = 'Please fill in all required fields marked with an asterisk (*).';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      if (password.length < 6) {
+        alertBox.textContent = 'Password must be at least 6 characters long.';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        alertBox.textContent = 'Passwords do not match. Please verify both passwords.';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      if (!termsAccepted) {
+        alertBox.textContent = 'Please accept the Terms of Service and Privacy Policy to proceed.';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span class="spinner"></span> Creating account...`;
+
+      try {
+        await authService.register(email, password, name, phone);
+        showToast('Account registered successfully! Redirecting...', 'success');
+        setTimeout(() => {
+          window.location.href = 'verify-email.html';
+        }, 1000);
+      } catch (err) {
+        alertBox.textContent = authService.mapAuthError(err);
+        alertBox.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>Create Protected Account</span>`;
+      }
+    });
+  </script>
+</body>
+</html>

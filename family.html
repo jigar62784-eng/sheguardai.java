@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Circle & Permissions — SheGuard</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="container nav-container">
+      <a href="dashboard.html" class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+          <li><a href="family-locator.html" class="nav-link">Family Locator</a></li>
+          <li><a href="family.html" class="nav-link active">Family Circle</a></li>
+          <li><a href="trusted-contacts.html" class="nav-link">Contacts</a></li>
+          <li><a href="settings.html" class="nav-link">Settings</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions"></div>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content container container-narrow">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; gap: var(--space-4);">
+      <div>
+        <h1 style="font-size: var(--font-size-3xl); margin-bottom: var(--space-1);">Family Circle & Permissions</h1>
+        <p style="color: var(--text-secondary); font-size: var(--font-size-sm);">
+          Manage who can see your real-time location. All location sharing requires mutual opt-in consent.
+        </p>
+      </div>
+      <a href="family-locator.html" class="btn btn-secondary">
+        <span>📍 View Live Map</span>
+      </a>
+    </div>
+
+    <!-- Send Invitation Card -->
+    <div class="card" style="margin-bottom: var(--space-6);">
+      <h2 class="card-title">Invite Family Member</h2>
+      <p style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--space-4);">
+        Send an invitation to a parent, sibling, partner, or trusted guardian by their email address.
+      </p>
+
+      <form id="inviteFamilyForm" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+        <input type="email" id="inviteEmail" class="form-control" required placeholder="guardian@example.com" style="flex: 2; min-width: 220px;">
+        <select id="inviteRelationship" class="form-select" style="flex: 1; min-width: 140px;">
+          <option value="Mother">Mother</option>
+          <option value="Father">Father</option>
+          <option value="Sister">Sister</option>
+          <option value="Brother">Brother</option>
+          <option value="Spouse/Partner">Spouse/Partner</option>
+          <option value="Guardian">Guardian</option>
+          <option value="Other">Other Family</option>
+        </select>
+        <button type="submit" id="sendInviteBtn" class="btn btn-primary" style="min-width: 140px;">
+          <span>Send Invitation</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Pending Invitations -->
+    <div class="card" style="margin-bottom: var(--space-6);">
+      <h2 class="card-title">Pending Invitations</h2>
+      <div id="pendingInvitationsContainer" style="margin-top: var(--space-4);">
+        <div style="text-align: center; color: var(--text-muted); padding: var(--space-4);">
+          <span class="spinner"></span> Checking pending invitations...
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Connected Family Members -->
+    <div class="card">
+      <h2 class="card-title">Connected Family Members</h2>
+      <div id="activeFamilyMembersContainer" style="margin-top: var(--space-4);">
+        <div style="text-align: center; color: var(--text-muted); padding: var(--space-4);">
+          <span class="spinner"></span> Loading family members...
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth } from './js/guards.js';
+    import { familyService } from './js/family.js';
+    import { showToast, renderEmptyState, escapeHtml } from './js/ui.js';
+
+    await requireAuth();
+
+    const pendingContainer = document.getElementById('pendingInvitationsContainer');
+    const activeContainer = document.getElementById('activeFamilyMembersContainer');
+    const inviteForm = document.getElementById('inviteFamilyForm');
+    const sendBtn = document.getElementById('sendInviteBtn');
+
+    async function refreshFamilyView() {
+      // 1. Pending Invitations
+      try {
+        const invites = await familyService.getInvitations();
+        const incoming = (invites && invites.incoming) || [];
+        const outgoing = (invites && invites.outgoing) || [];
+
+        if (incoming.length === 0 && outgoing.length === 0) {
+          pendingContainer.innerHTML = `<p style="font-size: 13px; color: var(--text-muted); text-align: center; margin: 0;">No pending family invitations.</p>`;
+        } else {
+          pendingContainer.innerHTML = `
+            ${incoming.length > 0 ? `
+              <h4 style="font-size: 12px; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 8px;">Incoming Invitations for You</h4>
+              ${incoming.map(inv => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 8px;">
+                  <div>
+                    <strong style="color: #fff;">${escapeHtml(inv.senderName || inv.senderEmail)}</strong> wants to connect as <em>${escapeHtml(inv.relationship || 'Family')}</em>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <button class="btn btn-primary btn-sm accept-invite-btn" data-id="${escapeHtml(inv.id)}">Accept</button>
+                    <button class="btn btn-outline btn-sm reject-invite-btn" data-id="${escapeHtml(inv.id)}">Decline</button>
+                  </div>
+                </div>
+              `).join('')}
+            ` : ''}
+
+            ${outgoing.length > 0 ? `
+              <h4 style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin: 12px 0 8px;">Sent by You (Awaiting Acceptance)</h4>
+              ${outgoing.map(inv => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 6px; font-size: 13px;">
+                  <span>Sent to: <strong style="color: #E2E8F0;">${escapeHtml(inv.recipientEmail)}</strong> (${escapeHtml(inv.relationship)})</span>
+                  <span class="badge badge-pending">Pending</span>
+                </div>
+              `).join('')}
+            ` : ''}
+          `;
+
+          // Attach accept/decline listeners
+          pendingContainer.querySelectorAll('.accept-invite-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              btn.disabled = true;
+              try {
+                await familyService.acceptInvitation(btn.dataset.id);
+                showToast('Invitation accepted! Family circle connected.', 'success');
+                await refreshFamilyView();
+              } catch (err) {
+                showToast(err.message, 'danger');
+                btn.disabled = false;
+              }
+            });
+          });
+
+          pendingContainer.querySelectorAll('.reject-invite-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              btn.disabled = true;
+              try {
+                await familyService.rejectInvitation(btn.dataset.id);
+                showToast('Invitation declined.', 'info');
+                await refreshFamilyView();
+              } catch (err) {
+                showToast(err.message, 'danger');
+                btn.disabled = false;
+              }
+            });
+          });
+        }
+      } catch (err) {
+        pendingContainer.innerHTML = `<div class="alert alert-warning" style="font-size: 12px;">Could not load invitations: ${escapeHtml(err.message)}</div>`;
+      }
+
+      // 2. Active Members
+      try {
+        const members = await familyService.getFamilyMembers();
+        const list = members || [];
+
+        if (list.length === 0) {
+          renderEmptyState(
+            activeContainer,
+            'No Connected Family Members',
+            'Invite trusted family members above to view each other\'s live location and coordinate safety.',
+            '👨‍👩‍👧'
+          );
+          return;
+        }
+
+        activeContainer.innerHTML = `
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Family Member</th>
+                  <th>Relationship</th>
+                  <th>Can View My Location</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${list.map(m => `
+                  <tr>
+                    <td>
+                      <strong style="color: #fff;">${escapeHtml(m.displayName || 'Member')}</strong><br>
+                      <span style="font-size: 11px; color: #94A3B8;">${escapeHtml(m.email || '')}</span>
+                    </td>
+                    <td>${escapeHtml(m.relationship || 'Family')}</td>
+                    <td>
+                      <label class="switch">
+                        <input type="checkbox" class="perm-toggle" data-id="${escapeHtml(m.id)}" ${m.canViewLocation !== false ? 'checked' : ''}>
+                        <span class="switch-slider"></span>
+                      </label>
+                    </td>
+                    <td>
+                      <span class="badge ${m.sharingStatus === 'ACTIVE' ? 'badge-live' : 'badge-stale'}">
+                        ${m.sharingStatus === 'ACTIVE' ? 'Active' : 'Offline'}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="btn btn-outline btn-sm remove-member-btn" data-id="${escapeHtml(m.id)}" style="color: #EF4444; border-color: rgba(239, 68, 68, 0.4); font-size: 11px;">
+                        Revoke Access
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        // Toggle Listeners
+        activeContainer.querySelectorAll('.perm-toggle').forEach(t => {
+          t.addEventListener('change', async (e) => {
+            const memberId = t.dataset.id;
+            const allow = e.target.checked;
+            try {
+              await familyService.toggleMemberLocationAccess(memberId, allow);
+              showToast(`Location access ${allow ? 'granted' : 'revoked'}.`, 'success');
+            } catch (err) {
+              showToast(err.message, 'danger');
+              t.checked = !allow; // Revert
+            }
+          });
+        });
+
+        // Remove Listeners
+        activeContainer.querySelectorAll('.remove-member-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const success = await familyService.removeMember(btn.dataset.id);
+            if (success) await refreshFamilyView();
+          });
+        });
+      } catch (err) {
+        activeContainer.innerHTML = `<div class="alert alert-warning" style="font-size: 12px;">Failed to load family members: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    // Handle Invite Form
+    inviteForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('inviteEmail').value.trim();
+      const relationship = document.getElementById('inviteRelationship').value;
+
+      if (!email) return;
+
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = `<span class="spinner"></span> Sending...`;
+
+      try {
+        await familyService.sendInvitation(email, relationship);
+        showToast(`Invitation sent to ${email}.`, 'success');
+        inviteForm.reset();
+        await refreshFamilyView();
+      } catch (err) {
+        showToast(`Failed to send invitation: ${err.message}`, 'danger');
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = `<span>Send Invitation</span>`;
+      }
+    });
+
+    refreshFamilyView();
+  </script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SheGuard — Women Safety Incident Reporting & Live Family Locator</title>
+  <meta name="description" content="Next-generation women safety platform featuring encrypted incident reporting, live family location sharing, OSRM road routing, and instant SOS dispatch.">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <a href="#mainContent" class="skip-link">Skip to main content</a>
+
+  <!-- Header Navigation -->
+  <header class="app-header" role="banner">
+    <div class="container nav-container">
+      <a href="index.html" class="brand" aria-label="SheGuard Home">
+        <div class="brand-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+        <span class="brand-tag">SAFETY OS</span>
+      </a>
+
+      <!-- Desktop & Mobile Nav Links -->
+      <nav role="navigation" aria-label="Main navigation">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link active">Home</a></li>
+          <li><a href="safety-map.html" class="nav-link">Safety Map</a></li>
+          <li class="nav-auth-only" style="display: none;"><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+          <li class="nav-auth-only" style="display: none;"><a href="report-incident.html" class="nav-link">Report Incident</a></li>
+          <li class="nav-auth-only" style="display: none;"><a href="my-reports.html" class="nav-link">My Reports</a></li>
+          <li class="nav-auth-only" style="display: none;"><a href="family-locator.html" class="nav-link">Family Locator</a></li>
+          <li class="nav-auth-only" style="display: none;"><a href="trusted-contacts.html" class="nav-link">Contacts</a></li>
+          <li class="nav-admin-only" style="display: none;"><a href="admin.html" class="nav-link" style="color: #A78BFA;">Admin</a></li>
+        </ul>
+      </nav>
+
+      <!-- Nav Actions -->
+      <div class="nav-actions">
+        <a href="emergency.html" class="sos-nav-btn" aria-label="Emergency SOS Alert">
+          <span aria-hidden="true">🚨</span>
+          <span>SOS</span>
+        </a>
+        <a href="login.html" class="btn btn-secondary btn-sm nav-guest-only">Log in</a>
+        <a href="register.html" class="btn btn-primary btn-sm nav-guest-only">Get Protected</a>
+      </div>
+
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="mainContent" class="main-content" role="main">
+    <!-- Hero Section -->
+    <section class="hero-section container">
+      <div class="hero-badge" aria-label="Status indicator">
+        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #38BDF8; box-shadow: 0 0 8px #38BDF8;"></span>
+        NEXT-GEN REAL-TIME SAFETY NETWORK
+      </div>
+
+      <h1 class="hero-title">
+        Empowering Women with <span class="hero-title-gradient">Intelligent Protection & Verified Response</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Confidential incident reporting, real-time family location sharing with Haversine proximity triage, turn-by-turn navigation, and instant multi-channel SOS emergency dispatch.
+      </p>
+
+      <div class="hero-actions">
+        <a href="emergency.html" class="btn btn-danger btn-lg" style="gap: 10px;">
+          <span aria-hidden="true">🚨</span> Activate Emergency SOS
+        </a>
+        <a href="report-incident.html" class="btn btn-primary btn-lg">
+          📝 Report an Incident
+        </a>
+        <a href="safety-map.html" class="btn btn-secondary btn-lg">
+          🗺️ Explore Safety Map
+        </a>
+      </div>
+
+      <!-- Feature Grid -->
+      <div class="hero-features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <h3>Confidential Incident Reporting</h3>
+          <p>File encrypted incident reports with private evidence storage, status tracking, and privacy-protected coordinates that never expose victim homes.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+              <path d="M2 12h20"/>
+            </svg>
+          </div>
+          <h3>Live Family Locator & Proximity</h3>
+          <p>Real opt-in GPS location sharing with family circles. Computes geodesic Haversine distance, filters stale positions, and identifies your nearest protector.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+            </svg>
+          </div>
+          <h3>Turn-by-Turn Road Routing</h3>
+          <p>Powered by OpenStreetMap-compatible routing (OSRM). Generates accurate road paths, travel duration, and one-click Google Maps navigation fallbacks.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <h3>Fail-Safe SOS Emergency Alert</h3>
+          <p>5-second cancelable countdown broadcasts your live GPS coordinates, message, and emergency details to trusted contacts with honest provider delivery status.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="brand">
+            <div class="brand-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <span class="brand-name">SheGuard</span>
+          </a>
+          <p>A production-ready women safety system engineered for real-time security, authentic database verification, and trusted family connectivity.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="safety-map.html">Public Safety Map</a></li>
+            <li><a href="family-locator.html">Live Family Locator</a></li>
+            <li><a href="report-incident.html">File an Incident</a></li>
+            <li><a href="my-reports.html">Track Reports</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Security & Privacy</h4>
+          <ul class="footer-links">
+            <li><a href="settings.html">Account & Privacy</a></li>
+            <li><a href="trusted-contacts.html">Emergency Contacts</a></li>
+            <li><a href="family.html">Family Permissions</a></li>
+            <li><a href="admin.html">Admin Verification</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Verified Emergency Lines</h4>
+          <div class="helpline-box">
+            <div class="helpline-item">
+              <span>National All-Emergency</span>
+              <span class="helpline-number"><a href="tel:112" style="color: inherit;">112</a></span>
+            </div>
+            <div class="helpline-item">
+              <span>Women Helpline</span>
+              <span class="helpline-number"><a href="tel:1091" style="color: inherit;">1091</a></span>
+            </div>
+            <div class="helpline-item">
+              <span>Cyber Harassment</span>
+              <span class="helpline-number"><a href="tel:1930" style="color: inherit;">1930</a></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 SheGuard Safety System. Confidential & Encrypted.</div>
+        <div>Coordinates fuzzed for public display &bull; Zero fabricated test data</div>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="js/guards.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+# SheGuard Git Ignore
+
+# Secrets & Service Account Keys
+serviceAccountKey.json
+*serviceAccount*.json
+*credentials*.json
+*.secret.json
+.env
+.env.local
+.env.*.local
+node_modules/
+
+# Java & Maven
+target/
+*.class
+*.jar
+*.war
+.m2/
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE & Editor files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.DS_Store
+
+# Temporary uploads and logs
+uploads/
+logs/
+*.log

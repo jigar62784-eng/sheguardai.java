@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Family Locator — SheGuard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="container nav-container">
+      <a href="dashboard.html" class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+          <li><a href="safety-map.html" class="nav-link">Safety Map</a></li>
+          <li><a href="family-locator.html" class="nav-link active">Family Locator</a></li>
+          <li><a href="family.html" class="nav-link">Family Circle</a></li>
+          <li><a href="trusted-contacts.html" class="nav-link">Contacts</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions"></div>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content container-wide" style="padding-top: var(--space-4);">
+    <div class="map-view-container" style="grid-template-columns: 360px 1fr;">
+      <!-- Family Locator Sidebar -->
+      <aside class="map-sidebar">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+          <h2 style="font-size: var(--font-size-xl); color: #fff; margin: 0;">Family Circle</h2>
+          <a href="family.html" class="btn btn-secondary btn-sm" style="font-size: 11px;">Manage Circle</a>
+        </div>
+        <p style="font-size: var(--font-size-xs); color: var(--text-secondary); margin-bottom: var(--space-4);">
+          Real-time GPS coordinates shared mutually with consent. Sorted by straight-line Haversine proximity.
+        </p>
+
+        <!-- Nearest Family Member Spotlight -->
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-cyan); font-weight: bold; margin-bottom: 6px;">
+          ⚡ Nearest Protector
+        </div>
+        <div id="nearestMemberPanel">
+          <div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 12px;">
+            <span class="spinner"></span> Locating family...
+          </div>
+        </div>
+
+        <!-- Refresh / Recenter Controls -->
+        <div style="display: flex; gap: 8px; margin-bottom: var(--space-4);">
+          <button id="recenterUserBtn" class="btn btn-outline btn-sm" style="flex: 1; font-size: 11px;">
+            📍 My Location
+          </button>
+          <button id="refreshFamilyBtn" class="btn btn-secondary btn-sm" style="flex: 1; font-size: 11px;">
+            🔄 Refresh GPS
+          </button>
+        </div>
+
+        <!-- Family Member Roster -->
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: bold; margin-bottom: 8px;">
+          All Shared Locations
+        </div>
+        <div id="familyMemberList" class="family-list">
+          <div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 12px;">
+            Loading active members...
+          </div>
+        </div>
+      </aside>
+
+      <!-- Map Area -->
+      <div class="map-wrapper">
+        <div id="familyMap"></div>
+
+        <div class="map-legend">
+          <div style="font-weight: bold; margin-bottom: 4px; color: #fff;">Legend</div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #38BDF8;"></span>
+            <span>You (Live GPS)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #10B981;"></span>
+            <span>Family Member (Active &lt;30m)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #64748B;"></span>
+            <span>Stale Location (&gt;30m)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #38BDF8; width: 14px; height: 4px; border-radius: 2px;"></span>
+            <span>OSRM Road Route</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script type="module">
+    import { requireAuth } from './js/guards.js';
+    import { FamilyLocatorController } from './js/family-locator.js';
+    import { showToast } from './js/ui.js';
+
+    await requireAuth();
+
+    const locatorCtrl = new FamilyLocatorController('familyMap');
+    await locatorCtrl.initMap();
+
+    document.getElementById('recenterUserBtn').addEventListener('click', async () => {
+      await locatorCtrl.acquireUserLocation();
+      showToast('Centered map on your GPS coordinates.', 'info');
+    });
+
+    document.getElementById('refreshFamilyBtn').addEventListener('click', async () => {
+      await locatorCtrl.refreshFamilyLocations();
+      showToast('Refreshed family locations.', 'info');
+    });
+
+    window.addEventListener('beforeunload', () => {
+      locatorCtrl.destroy();
+    });
+  </script>
+</body>
+</html>

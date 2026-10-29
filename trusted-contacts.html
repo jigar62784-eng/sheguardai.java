@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trusted Contacts — SheGuard</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="container nav-container">
+      <a href="dashboard.html" class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+          <li><a href="family-locator.html" class="nav-link">Family Locator</a></li>
+          <li><a href="family.html" class="nav-link">Family Circle</a></li>
+          <li><a href="trusted-contacts.html" class="nav-link active">Contacts</a></li>
+          <li><a href="emergency.html" class="nav-link" style="color: #EF4444;">SOS Emergency</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions"></div>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content container container-narrow">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; gap: var(--space-4);">
+      <div>
+        <h1 style="font-size: var(--font-size-3xl); margin-bottom: var(--space-1);">Trusted Emergency Contacts</h1>
+        <p style="color: var(--text-secondary); font-size: var(--font-size-sm);">
+          These verified contacts will receive automatic SMS and Email alerts with your live coordinates whenever you activate SOS.
+        </p>
+      </div>
+      <button id="openAddContactBtn" class="btn btn-primary">
+        <span>+ Add Contact</span>
+      </button>
+    </div>
+
+    <!-- Contacts Table / Cards -->
+    <div class="card">
+      <div id="contactsContainer">
+        <div style="text-align: center; padding: var(--space-8); color: var(--text-muted);">
+          <span class="spinner"></span> Loading contacts from database...
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Contact Modal -->
+    <div id="contactModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 class="modal-title" id="contactModalTitle">Add Trusted Contact</h3>
+          <button class="modal-close" id="closeContactModal" aria-label="Close dialog">&times;</button>
+        </div>
+        <form id="contactForm" novalidate>
+          <div class="modal-body">
+            <input type="hidden" id="contactEditId">
+
+            <div class="form-group">
+              <label for="contactName" class="form-label">Contact Name <span class="required">*</span></label>
+              <input type="text" id="contactName" class="form-control" required placeholder="e.g. John Doe">
+            </div>
+
+            <div class="form-group">
+              <label for="contactRelationship" class="form-label">Relationship <span class="required">*</span></label>
+              <select id="contactRelationship" class="form-select" required>
+                <option value="Parent">Parent</option>
+                <option value="Spouse/Partner">Spouse / Partner</option>
+                <option value="Sibling">Sibling</option>
+                <option value="Friend">Friend</option>
+                <option value="Colleague">Colleague</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="contactPhone" class="form-label">Phone Number (For Urgent SMS) <span class="required">*</span></label>
+              <input type="tel" id="contactPhone" class="form-control" required placeholder="+1234567890">
+            </div>
+
+            <div class="form-group">
+              <label for="contactEmail" class="form-label">Email Address (Optional)</label>
+              <input type="email" id="contactEmail" class="form-control" placeholder="contact@example.com">
+            </div>
+
+            <div class="form-group">
+              <label class="form-check">
+                <input type="checkbox" id="contactNotifySos" checked>
+                <span class="form-check-label">
+                  Automatically notify this contact during Emergency SOS alerts.
+                </span>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="cancelContactModal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveContactBtn">Save Contact</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth } from './js/guards.js';
+    import { contactsService } from './js/contacts.js';
+    import { openModal, closeModal, renderEmptyState, escapeHtml, showToast } from './js/ui.js';
+
+    await requireAuth();
+
+    const container = document.getElementById('contactsContainer');
+    const modal = document.getElementById('contactModal');
+    const form = document.getElementById('contactForm');
+    let loadedContacts = [];
+
+    async function loadContacts() {
+      try {
+        const contacts = await contactsService.getContacts();
+        loadedContacts = contacts || [];
+
+        if (loadedContacts.length === 0) {
+          renderEmptyState(
+            container,
+            'No Trusted Contacts Added',
+            'Add at least 1 or 2 emergency contacts so they can be immediately alerted when you activate SOS.',
+            '👥',
+            '<button class="btn btn-primary btn-sm" id="emptyAddBtn">+ Add First Contact</button>'
+          );
+          document.getElementById('emptyAddBtn')?.addEventListener('click', openAddModal);
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Relationship</th>
+                  <th>Phone Number</th>
+                  <th>Email</th>
+                  <th>SOS Alerts</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${loadedContacts.map(c => `
+                  <tr>
+                    <td><strong style="color: #fff;">${escapeHtml(c.name)}</strong></td>
+                    <td>${escapeHtml(c.relationship || 'Contact')}</td>
+                    <td style="font-family: monospace;">${escapeHtml(c.phoneNumber)}</td>
+                    <td style="font-size: 13px; color: #94A3B8;">${escapeHtml(c.email || '—')}</td>
+                    <td>
+                      <span class="badge ${c.notifyOnSos ? 'badge-verified' : 'badge-submitted'}">
+                        ${c.notifyOnSos ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </td>
+                    <td>
+                      <div style="display: flex; gap: 6px;">
+                        <button class="btn btn-outline btn-sm edit-contact-btn" data-id="${escapeHtml(c.id)}" style="font-size: 11px;">Edit</button>
+                        <button class="btn btn-outline btn-sm delete-contact-btn" data-id="${escapeHtml(c.id)}" style="color: #EF4444; border-color: rgba(239,68,68,0.4); font-size: 11px;">Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        container.querySelectorAll('.edit-contact-btn').forEach(btn => {
+          btn.addEventListener('click', () => openEditModal(btn.dataset.id));
+        });
+
+        container.querySelectorAll('.delete-contact-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const ok = await contactsService.deleteContact(btn.dataset.id);
+            if (ok) await loadContacts();
+          });
+        });
+      } catch (err) {
+        container.innerHTML = `<div class="alert alert-warning">Could not fetch contacts: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function openAddModal() {
+      form.reset();
+      document.getElementById('contactEditId').value = '';
+      document.getElementById('contactModalTitle').textContent = 'Add Trusted Contact';
+      openModal('contactModal');
+    }
+
+    function openEditModal(id) {
+      const contact = loadedContacts.find(c => c.id === id);
+      if (!contact) return;
+
+      document.getElementById('contactEditId').value = contact.id;
+      document.getElementById('contactName').value = contact.name || '';
+      document.getElementById('contactRelationship').value = contact.relationship || 'Friend';
+      document.getElementById('contactPhone').value = contact.phoneNumber || '';
+      document.getElementById('contactEmail').value = contact.email || '';
+      document.getElementById('contactNotifySos').checked = contact.notifyOnSos !== false;
+      document.getElementById('contactModalTitle').textContent = 'Edit Contact';
+
+      openModal('contactModal');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('contactEditId').value;
+      const name = document.getElementById('contactName').value.trim();
+      const relationship = document.getElementById('contactRelationship').value;
+      const phoneNumber = document.getElementById('contactPhone').value.trim();
+      const email = document.getElementById('contactEmail').value.trim();
+      const notifyOnSos = document.getElementById('contactNotifySos').checked;
+
+      if (!name || !phoneNumber) {
+        showToast('Please provide a name and valid phone number.', 'warning');
+        return;
+      }
+
+      const saveBtn = document.getElementById('saveContactBtn');
+      saveBtn.disabled = true;
+
+      try {
+        if (id) {
+          await contactsService.updateContact(id, { name, relationship, phoneNumber, email, notifyOnSos });
+          showToast('Contact updated successfully.', 'success');
+        } else {
+          await contactsService.addContact({ name, relationship, phoneNumber, email, notifyOnSos });
+          showToast('Contact added successfully.', 'success');
+        }
+        closeModal('contactModal');
+        await loadContacts();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+
+    document.getElementById('openAddContactBtn').addEventListener('click', openAddModal);
+    document.getElementById('closeContactModal').addEventListener('click', () => closeModal('contactModal'));
+    document.getElementById('cancelContactModal').addEventListener('click', () => closeModal('contactModal'));
+
+    loadContacts();
+  </script>
+</body>
+</html>

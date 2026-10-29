@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — SheGuard</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <a href="#mainContent" class="skip-link">Skip to dashboard content</a>
+
+  <!-- Header Navigation -->
+  <header class="app-header">
+    <div class="container nav-container">
+      <a href="dashboard.html" class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="dashboard.html" class="nav-link active">Dashboard</a></li>
+          <li><a href="safety-map.html" class="nav-link">Safety Map</a></li>
+          <li><a href="report-incident.html" class="nav-link">Report Incident</a></li>
+          <li><a href="my-reports.html" class="nav-link">My Reports</a></li>
+          <li><a href="family-locator.html" class="nav-link">Family Locator</a></li>
+          <li><a href="trusted-contacts.html" class="nav-link">Contacts</a></li>
+          <li class="nav-admin-only" style="display: none;"><a href="admin.html" class="nav-link" style="color: #A78BFA;">Admin</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <!-- Injected dynamically by guards.js -->
+      </div>
+
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="mainContent" class="main-content container">
+    <div class="dashboard-layout">
+      <!-- Sidebar -->
+      <aside class="dashboard-sidebar" aria-label="Dashboard navigation">
+        <div class="sidebar-heading">Safety Hub</div>
+        <ul class="sidebar-menu">
+          <li class="sidebar-item active">
+            <a href="dashboard.html">
+              <span>📊</span>
+              <span>Overview</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="report-incident.html">
+              <span>📝</span>
+              <span>Report Incident</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="my-reports.html">
+              <span>📁</span>
+              <span>My Reports</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="safety-map.html">
+              <span>🗺️</span>
+              <span>Public Safety Map</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="family-locator.html">
+              <span>📍</span>
+              <span>Family Locator</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="family.html">
+              <span>👨‍👩‍👧</span>
+              <span>Family Circle</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="trusted-contacts.html">
+              <span>👥</span>
+              <span>Trusted Contacts</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="emergency.html">
+              <span>🚨</span>
+              <span>SOS Emergency</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="settings.html">
+              <span>⚙️</span>
+              <span>Settings & Privacy</span>
+            </a>
+          </li>
+        </ul>
+      </aside>
+
+      <!-- Dashboard Main Content -->
+      <section class="dashboard-view">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; gap: var(--space-4);">
+          <div>
+            <h1 id="userGreeting" style="font-size: var(--font-size-3xl); margin-bottom: var(--space-1);">Dashboard</h1>
+            <p style="font-size: var(--font-size-sm); color: var(--text-secondary);">Your real-time security status and personal incident reports.</p>
+          </div>
+          <div style="display: flex; gap: var(--space-3);">
+            <a href="report-incident.html" class="btn btn-primary">
+              <span>📝 File Incident Report</span>
+            </a>
+            <a href="emergency.html" class="btn btn-danger">
+              <span>🚨 Emergency SOS</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-icon" style="color: var(--accent-cyan);">📁</div>
+            <div>
+              <div class="metric-value" id="metricTotalReports">-</div>
+              <div class="metric-label">Total Reports Filed</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="color: var(--color-warning);">⏳</div>
+            <div>
+              <div class="metric-value" id="metricPendingReports">-</div>
+              <div class="metric-label">Awaiting Review</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="color: var(--color-success);">✅</div>
+            <div>
+              <div class="metric-value" id="metricVerifiedReports">-</div>
+              <div class="metric-label">Verified Reports</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="color: var(--primary-purple);">👥</div>
+            <div>
+              <div class="metric-value" id="metricContactsCount">-</div>
+              <div class="metric-label">Trusted Contacts</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="color: #38BDF8;">📍</div>
+            <div>
+              <div class="metric-value" id="metricFamilyStatus" style="font-size: 1.1rem;">-</div>
+              <div class="metric-label">Family Sharing</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Access Banner -->
+        <div class="card" style="margin-bottom: var(--space-8); background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(56, 189, 248, 0.1) 100%); border-color: rgba(124, 58, 237, 0.3);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+            <div>
+              <h3 style="color: #fff; margin-bottom: var(--space-1);">Live Family Locator Active</h3>
+              <p style="font-size: var(--font-size-sm); margin: 0;">View nearby family members, calculate road routes via OSRM, or send emergency assistance requests.</p>
+            </div>
+            <a href="family-locator.html" class="btn btn-accent btn-sm">Open Live Locator Map</a>
+          </div>
+        </div>
+
+        <!-- Recent Reports List Container -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Recent Incident Reports</h2>
+            <a href="my-reports.html" style="font-size: var(--font-size-sm);">View all &rarr;</a>
+          </div>
+          <div class="card-body" id="dashboardRecentReports">
+            <div style="text-align: center; padding: var(--space-8); color: var(--text-muted);">
+              <span class="spinner"></span> Loading report records...
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth } from './js/guards.js';
+    import { dashboardController } from './js/dashboard.js';
+
+    await requireAuth();
+    await dashboardController.init();
+  </script>
+</body>
+</html>

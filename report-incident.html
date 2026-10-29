@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Incident — SheGuard</title>
+  <!-- Leaflet CSS for Interactive Location Picker -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <a href="#incidentForm" class="skip-link">Skip to report form</a>
+
+  <header class="app-header">
+    <div class="container nav-container">
+      <a href="dashboard.html" class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+          <li><a href="safety-map.html" class="nav-link">Safety Map</a></li>
+          <li><a href="report-incident.html" class="nav-link active">Report Incident</a></li>
+          <li><a href="my-reports.html" class="nav-link">My Reports</a></li>
+          <li><a href="family-locator.html" class="nav-link">Family Locator</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions"></div>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content container container-narrow">
+    <div class="card" style="margin-bottom: var(--space-8);">
+      <div class="card-header">
+        <div>
+          <h1 class="card-title" style="font-size: var(--font-size-2xl);">Confidential Incident Report</h1>
+          <p style="margin-top: 4px; font-size: var(--font-size-sm); color: var(--text-secondary);">
+            Your report is stored securely and privately. Precise victim home coordinates are never published to public maps.
+          </p>
+        </div>
+      </div>
+
+      <div id="formAlertBox" class="alert alert-danger" style="display: none;" role="alert"></div>
+      <div id="formSuccessBox" class="alert alert-success" style="display: none;" role="status"></div>
+
+      <form id="incidentForm" novalidate>
+        <!-- Category -->
+        <div class="form-group">
+          <label for="incidentCategory" class="form-label">Incident Category <span class="required">*</span></label>
+          <select id="incidentCategory" class="form-select" required>
+            <option value="">Select Category...</option>
+            <option value="harassment">Harassment / Eve Teasing</option>
+            <option value="stalking">Stalking / Following</option>
+            <option value="physical_assault">Physical Assault</option>
+            <option value="threats">Threats / Intimidation</option>
+            <option value="cyber_harassment">Cyber Harassment / Blackmail</option>
+            <option value="unsafe_location">Unsafe Public Location (Poor lighting / Isolated)</option>
+            <option value="other">Other Safety Incident</option>
+          </select>
+        </div>
+
+        <!-- Date & Time -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+          <div class="form-group">
+            <label for="incidentDate" class="form-label">Date of Incident <span class="required">*</span></label>
+            <input type="date" id="incidentDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="incidentTime" class="form-label">Approximate Time</label>
+            <input type="time" id="incidentTime" class="form-control">
+          </div>
+        </div>
+
+        <!-- Location Picker -->
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+            <label class="form-label" style="margin-bottom: 0;">Incident Location <span class="required">*</span></label>
+            <button type="button" id="useCurrentLocationBtn" class="btn btn-secondary btn-sm" style="font-size: 11px;">
+              📍 Use My Current GPS
+            </button>
+          </div>
+          
+          <input type="text" id="incidentAddress" class="form-control" placeholder="Street address, landmark, or public area" style="margin-bottom: var(--space-2);">
+          
+          <!-- Interactive Mini Map -->
+          <div id="incidentPickerMap" style="height: 240px; border-radius: var(--radius-md); border: 1px solid var(--border-medium); margin-bottom: var(--space-2);"></div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+            <div>
+              <span style="font-size: 11px; color: var(--text-muted);">Latitude</span>
+              <input type="number" id="incidentLat" class="form-control" step="any" required placeholder="Latitude">
+            </div>
+            <div>
+              <span style="font-size: 11px; color: var(--text-muted);">Longitude</span>
+              <input type="number" id="incidentLon" class="form-control" step="any" required placeholder="Longitude">
+            </div>
+          </div>
+          <div class="form-hint">Click anywhere on the map or use the GPS button to set the location pin.</div>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label for="incidentDescription" class="form-label">Description of Incident <span class="required">*</span></label>
+          <textarea id="incidentDescription" class="form-textarea" required placeholder="Please provide specific, truthful details of what occurred, physical descriptions if known, vehicle details, etc."></textarea>
+        </div>
+
+        <!-- Evidence Attachment -->
+        <div class="form-group">
+          <label for="evidenceFile" class="form-label">Optional Evidence Attachment (Photo / Document / Screenshot)</label>
+          <input type="file" id="evidenceFile" class="form-control" accept="image/*,.pdf,.doc,.docx">
+          <div class="form-hint">Files are privately encrypted and only accessible to authorized safety moderators.</div>
+        </div>
+
+        <!-- Public Safety Map Consent -->
+        <div class="form-group">
+          <label class="form-check">
+            <input type="checkbox" id="publicDisplayConsent">
+            <span class="form-check-label">
+              Allow generalized, anonymized alert point on the Public Safety Map (Exact address is fuzzed by ~500m to protect your privacy).
+            </span>
+          </label>
+        </div>
+
+        <!-- Legal Consent -->
+        <div class="form-group">
+          <label class="form-check">
+            <input type="checkbox" id="legalConsent" required>
+            <span class="form-check-label">
+              I certify under penalty of false reporting that the information provided is truthful to the best of my knowledge. <span class="required">*</span>
+            </span>
+          </label>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div id="submitProgressWrapper" style="display: none; margin-bottom: var(--space-4);">
+          <div style="font-size: 12px; color: var(--accent-cyan); margin-bottom: 4px;" id="submitProgressText">Submitting report to secure database...</div>
+          <div style="height: 6px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
+            <div style="width: 100%; height: 100%; background: var(--accent-gradient); animation: pulse 1.5s infinite;"></div>
+          </div>
+        </div>
+
+        <button type="submit" id="submitReportBtn" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem;">
+          <span>Submit Confidential Report</span>
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script type="module">
+    import { requireAuth } from './js/guards.js';
+    import { reportsService } from './js/reports.js';
+    import { locationService } from './js/location.js';
+    import { CONFIG } from './js/config.js';
+    import { showToast, escapeHtml } from './js/ui.js';
+
+    await requireAuth();
+
+    // Initialize date to today
+    document.getElementById('incidentDate').value = new Date().toISOString().split('T')[0];
+
+    // Mini Map Picker Setup
+    const defaultCenter = [20.5937, 78.9629];
+    const map = window.L.map('incidentPickerMap').setView(defaultCenter, 5);
+    window.L.tileLayer(CONFIG.MAP.TILE_LAYER_DARK, {
+      attribution: CONFIG.MAP.ATTRIBUTION,
+      maxZoom: 18
+    }).addTo(map);
+
+    let currentMarker = null;
+
+    function updateMarker(lat, lon) {
+      document.getElementById('incidentLat').value = lat.toFixed(6);
+      document.getElementById('incidentLon').value = lon.toFixed(6);
+
+      if (currentMarker) {
+        currentMarker.setLatLng([lat, lon]);
+      } else {
+        currentMarker = window.L.marker([lat, lon], { draggable: true }).addTo(map);
+        currentMarker.on('dragend', function (e) {
+          const coord = e.target.getLatLng();
+          document.getElementById('incidentLat').value = coord.lat.toFixed(6);
+          document.getElementById('incidentLon').value = coord.lng.toFixed(6);
+        });
+      }
+      map.setView([lat, lon], 14);
+    }
+
+    map.on('click', function(e) {
+      updateMarker(e.latlng.lat, e.latlng.lng);
+    });
+
+    // Try getting user location initially
+    try {
+      const pos = await locationService.getCurrentPosition();
+      updateMarker(pos.latitude, pos.longitude);
+    } catch (e) {
+      // User hasn't granted location or dismissed
+    }
+
+    document.getElementById('useCurrentLocationBtn').addEventListener('click', async () => {
+      try {
+        const pos = await locationService.getCurrentPosition();
+        updateMarker(pos.latitude, pos.longitude);
+        showToast('Location updated to current GPS coordinates.', 'info');
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    });
+
+    // Form Submission
+    const form = document.getElementById('incidentForm');
+    const alertBox = document.getElementById('formAlertBox');
+    const successBox = document.getElementById('formSuccessBox');
+    const submitBtn = document.getElementById('submitReportBtn');
+    const progressWrapper = document.getElementById('submitProgressWrapper');
+    const progressText = document.getElementById('submitProgressText');
+
+    let isSubmitting = false;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (isSubmitting) return;
+
+      alertBox.style.display = 'none';
+      successBox.style.display = 'none';
+
+      const category = document.getElementById('incidentCategory').value;
+      const incidentDate = document.getElementById('incidentDate').value;
+      const incidentTime = document.getElementById('incidentTime').value;
+      const address = document.getElementById('incidentAddress').value.trim();
+      const latitude = document.getElementById('incidentLat').value;
+      const longitude = document.getElementById('incidentLon').value;
+      const description = document.getElementById('incidentDescription').value.trim();
+      const legalConsent = document.getElementById('legalConsent').checked;
+      const isPublicSafeDisplayEligible = document.getElementById('publicDisplayConsent').checked;
+      const evidenceFile = document.getElementById('evidenceFile').files[0] || null;
+
+      if (!category || !incidentDate || !latitude || !longitude || !description) {
+        alertBox.textContent = 'Please complete all required fields and set a location coordinate.';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      if (!legalConsent) {
+        alertBox.textContent = 'You must certify the truthfulness of the report to submit.';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      isSubmitting = true;
+      submitBtn.disabled = true;
+      progressWrapper.style.display = 'block';
+      progressText.textContent = 'Transmitting encrypted report to SheGuard backend...';
+
+      try {
+        const result = await reportsService.submitReport(
+          {
+            category,
+            incidentDate,
+            incidentTime,
+            address,
+            latitude,
+            longitude,
+            description,
+            consentGiven: legalConsent,
+            isPublicSafeDisplayEligible
+          },
+          evidenceFile,
+          (msg) => { progressText.textContent = msg; }
+        );
+
+        successBox.innerHTML = `
+          <strong>Report Filed Successfully!</strong><br>
+          Official Tracking Reference: <strong style="font-family: monospace; font-size: 1.1rem; color: #fff;">${escapeHtml(result.reference)}</strong><br>
+          Your report has been logged with status: <strong>${escapeHtml(result.status || 'SUBMITTED')}</strong>. You can track all updates in My Reports.
+        `;
+        successBox.style.display = 'block';
+        form.reset();
+        progressWrapper.style.display = 'none';
+        showToast('Report submitted successfully.', 'success');
+
+        setTimeout(() => {
+          window.location.href = 'my-reports.html';
+        }, 2000);
+      } catch (err) {
+        alertBox.textContent = `Submission failed: ${err.message}`;
+        alertBox.style.display = 'block';
+        progressWrapper.style.display = 'none';
+        submitBtn.disabled = false;
+        isSubmitting = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Moderation & Analytics — SheGuard</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="container nav-container">
+      <a href="dashboard.html" class="brand">
+        <div class="brand-icon" style="background: linear-gradient(135deg, #7C3AED 0%, #38BDF8 100%);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+        <span class="brand-tag" style="background: rgba(124, 58, 237, 0.3); border-color: #7C3AED; color: #E9D5FF;">ADMIN PORTAL</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="dashboard.html" class="nav-link">User Dashboard</a></li>
+          <li><a href="safety-map.html" class="nav-link">Safety Map</a></li>
+          <li><a href="admin.html" class="nav-link active" style="color: #A78BFA;">Admin Console</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions"></div>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content container-wide">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; gap: var(--space-4);">
+      <div>
+        <h1 style="font-size: var(--font-size-3xl); margin-bottom: var(--space-1);">Safety Incident Verification & Moderation</h1>
+        <p style="color: var(--text-secondary); font-size: var(--font-size-sm);">
+          Server-authorized incident review, evidence evaluation, real analytics, and cryptographic audit log.
+        </p>
+      </div>
+      <button id="adminExportCsvBtn" class="btn btn-secondary">
+        <span>📥 Export All Records (CSV)</span>
+      </button>
+    </div>
+
+    <!-- Analytics Counters (Genuine Backend Aggregation) -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-icon" style="color: #38BDF8;">📊</div>
+        <div>
+          <div class="metric-value" id="adminTotalReports">-</div>
+          <div class="metric-label">Total System Incidents</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon" style="color: #F59E0B;">⏳</div>
+        <div>
+          <div class="metric-value" id="adminPendingReports">-</div>
+          <div class="metric-label">Pending Verification</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon" style="color: #10B981;">✅</div>
+        <div>
+          <div class="metric-value" id="adminVerifiedReports">-</div>
+          <div class="metric-label">Officially Verified</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon" style="color: #8B5CF6;">🏁</div>
+        <div>
+          <div class="metric-value" id="adminResolvedReports">-</div>
+          <div class="metric-label">Resolved Incidents</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-6); margin-bottom: var(--space-8);">
+      <!-- Incident Verification Queue -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Incident Review Queue</h2>
+          <span style="font-size: 12px; color: var(--text-muted);">Real Firestore Records</span>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Reporter</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminReportsTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                  <span class="spinner"></span> Loading incident records...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Categories Breakdown & Audit Logs -->
+      <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+        <div class="card">
+          <h3 class="card-title" style="margin-bottom: var(--space-4);">Incidents by Category</h3>
+          <div id="adminCategoryMetrics">
+            <div style="color: var(--text-muted); font-size: 12px;">Loading breakdown...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title" style="margin-bottom: var(--space-4);">Recent Audit Trail</h3>
+          <div id="adminAuditLogs" style="max-height: 220px; overflow-y: auto;">
+            <div style="color: var(--text-muted); font-size: 12px;">Loading audit logs...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="adminReviewModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="modal-dialog" style="max-width: 680px;">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modalRefTitle">Review Incident</h3>
+          <button class="modal-close" id="closeReviewModalBtn" aria-label="Close dialog">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
+            <div>
+              <span class="form-label">Category</span>
+              <div id="modalCategory" style="font-weight: bold; color: #fff;"></div>
+            </div>
+            <div>
+              <span class="form-label">Date & Time</span>
+              <div id="modalDate" style="color: #E2E8F0;"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <span class="form-label">Reported Coordinates & Address</span>
+            <div id="modalLocation" style="color: var(--text-primary); font-size: 13px;"></div>
+          </div>
+
+          <div class="form-group">
+            <span class="form-label">Incident Description</span>
+            <div id="modalDescription" style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; font-size: 13px; color: #CBD5E1; max-height: 160px; overflow-y: auto;"></div>
+          </div>
+
+          <div class="form-group">
+            <span class="form-label">Private Evidence Attachment</span>
+            <div id="modalEvidenceContainer"></div>
+          </div>
+
+          <div class="form-group">
+            <span class="form-label">Current Verification Status: <strong id="modalCurrentStatus" style="color: var(--accent-cyan);"></strong></span>
+          </div>
+
+          <div class="form-group">
+            <label for="reviewNotesInput" class="form-label">Moderator Review Notes (Visible to Reporter)</label>
+            <textarea id="reviewNotesInput" class="form-textarea" placeholder="Provide reason or context for verification/rejection/resolution..." style="min-height: 80px;"></textarea>
+          </div>
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: var(--space-4);">
+            <button class="btn btn-outline btn-sm action-status-btn" data-status="UNDER_REVIEW">Mark Under Review</button>
+            <button class="btn btn-success btn-sm action-status-btn" data-status="VERIFIED">Verify Report (Publish to Safety Map)</button>
+            <button class="btn btn-primary btn-sm action-status-btn" data-status="RESOLVED">Mark Resolved</button>
+            <button class="btn btn-danger btn-sm action-status-btn" data-status="REJECTED">Reject (False / Inaccurate)</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="modalDismissReviewBtn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAdmin } from './js/guards.js';
+    import { adminController } from './js/admin.js';
+    import { closeModal } from './js/ui.js';
+
+    await requireAdmin();
+    await adminController.init();
+
+    document.getElementById('adminExportCsvBtn').addEventListener('click', () => {
+      adminController.exportReportsCSV();
+    });
+
+    document.getElementById('closeReviewModalBtn').addEventListener('click', () => closeModal('adminReviewModal'));
+    document.getElementById('modalDismissReviewBtn').addEventListener('click', () => closeModal('adminReviewModal'));
+
+    // Status action buttons
+    document.querySelectorAll('.action-status-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const status = btn.dataset.status;
+        const notes = document.getElementById('reviewNotesInput').value.trim();
+        await adminController.updateReportStatus(status, notes);
+      });
+    });
+  </script>
+</body>
+</html>

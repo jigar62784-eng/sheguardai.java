@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Public Safety Map — SheGuard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="brand-name">SheGuard</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="safety-map.html" class="nav-link active">Safety Map</a></li>
+          <li class="nav-auth-only" style="display: none;"><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+          <li class="nav-auth-only" style="display: none;"><a href="report-incident.html" class="nav-link">Report Incident</a></li>
+          <li class="nav-auth-only" style="display: none;"><a href="family-locator.html" class="nav-link">Family Locator</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions"></div>
+      <button class="mobile-nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-content container-wide" style="padding-top: var(--space-4);">
+    <div class="map-view-container">
+      <!-- Filter Sidebar -->
+      <aside class="map-sidebar">
+        <h2 style="font-size: var(--font-size-xl); margin-bottom: var(--space-2); color: #fff;">Safety Map</h2>
+        <p style="font-size: var(--font-size-xs); color: var(--text-secondary); margin-bottom: var(--space-4);">
+          Verified community safety alerts & verified emergency resources. Coordinates fuzzed by ~500m to protect privacy.
+        </p>
+
+        <!-- Category Filter -->
+        <div class="form-group">
+          <label for="mapCategoryFilter" class="form-label">Filter Category</label>
+          <select id="mapCategoryFilter" class="form-select">
+            <option value="all">All Incident Categories</option>
+            <option value="harassment">Harassment / Eve Teasing</option>
+            <option value="stalking">Stalking / Following</option>
+            <option value="physical_assault">Physical Assault</option>
+            <option value="threats">Threats / Intimidation</option>
+            <option value="cyber_harassment">Cyber Harassment</option>
+            <option value="unsafe_location">Unsafe Public Location</option>
+          </select>
+        </div>
+
+        <!-- Date Range Filter -->
+        <div class="form-group">
+          <label for="mapDaysFilter" class="form-label">Time Window</label>
+          <select id="mapDaysFilter" class="form-select">
+            <option value="7">Last 7 Days</option>
+            <option value="30" selected>Last 30 Days</option>
+            <option value="90">Last 90 Days</option>
+            <option value="365">Past Year</option>
+          </select>
+        </div>
+
+        <!-- Layers Toggle -->
+        <div class="form-group">
+          <label class="form-check">
+            <input type="checkbox" id="toggleServicesCheckbox" checked>
+            <span class="form-check-label" style="font-size: 13px;">
+              Show Nearby Verified Police & Hospitals (OSM)
+            </span>
+          </label>
+        </div>
+
+        <!-- Location Button -->
+        <button id="centerUserLocationBtn" class="btn btn-secondary btn-sm" style="width: 100%; margin-bottom: var(--space-4);">
+          📍 Center on My Location
+        </button>
+
+        <a href="report-incident.html" class="btn btn-primary btn-sm" style="width: 100%; margin-bottom: var(--space-4);">
+          📝 Report Unsafe Area / Incident
+        </a>
+
+        <!-- Notice Container -->
+        <div id="mapEmptyNotice" class="alert alert-info" style="display: none; font-size: 11px;"></div>
+      </aside>
+
+      <!-- Map Display Area -->
+      <div class="map-wrapper">
+        <div id="safetyMap"></div>
+
+        <!-- Map Legend -->
+        <div class="map-legend">
+          <div style="font-weight: bold; margin-bottom: 6px; color: #fff;">Map Legend</div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #10B981;"></span>
+            <span>Verified Safety Incident</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #F59E0B;"></span>
+            <span>Pending Review</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #3B82F6;"></span>
+            <span>Police Station</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #10B981; border-radius: 2px;"></span>
+            <span>Hospital</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #38BDF8;"></span>
+            <span>Your Current Location</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script type="module">
+    import { SafetyMapController } from './js/safety-map.js';
+    import { showToast } from './js/ui.js';
+
+    const mapCtrl = new SafetyMapController('safetyMap');
+    await mapCtrl.initMap();
+
+    // Filters
+    document.getElementById('mapCategoryFilter').addEventListener('change', async (e) => {
+      await mapCtrl.setCategoryFilter(e.target.value);
+    });
+
+    document.getElementById('mapDaysFilter').addEventListener('change', async (e) => {
+      await mapCtrl.setDaysFilter(parseInt(e.target.value, 10));
+    });
+
+    document.getElementById('toggleServicesCheckbox').addEventListener('change', (e) => {
+      mapCtrl.toggleServicesLayer(e.target.checked);
+    });
+
+    document.getElementById('centerUserLocationBtn').addEventListener('click', async () => {
+      await mapCtrl.locateUser(true);
+    });
+  </script>
+</body>
+</html>
