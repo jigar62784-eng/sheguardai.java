@@ -14,7 +14,7 @@ const TEST_PORT = 5599;
 
 console.log('=== STARTING HTTP INTEGRATION TEST ===\n');
 
-const serverProcess = spawn('node', [path.join(rootDir, 'server.js'), String(TEST_PORT)], {
+const serverProcess = spawn('node', [path.join(rootDir, 'scripts', 'dev-server.js'), String(TEST_PORT)], {
   cwd: rootDir,
   stdio: 'inherit'
 });

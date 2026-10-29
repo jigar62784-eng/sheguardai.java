@@ -1,5 +1,5 @@
 /**
- * SheGuard - Production-Ready Lightweight Static Web Server
+ * SheGuard - Production-Ready Lightweight Static Web Server for Local Dev
  * Pure Node.js (Zero external dependencies).
  * Accurately serves ES Modules with proper MIME types.
  */
@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = __dirname;
+const rootDir = path.resolve(__dirname, '..');
 
 const PORT = parseInt(process.env.PORT || process.argv[2] || '5500', 10);
 
@@ -32,7 +32,6 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-  // Normalize path
   let reqPath = decodeURI(req.url.split('?')[0]);
   if (reqPath === '/' || reqPath === '') {
     reqPath = '/index.html';
@@ -41,7 +40,6 @@ const server = http.createServer((req, res) => {
   const safePath = path.normalize(reqPath).replace(/^(\.\.[\/\\])+/, '');
   let filePath = path.join(rootDir, safePath);
 
-  // If path is directory, look for index.html
   if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
     filePath = path.join(filePath, 'index.html');
   }
@@ -66,7 +64,6 @@ const server = http.createServer((req, res) => {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
-    // CORS headers for local testing
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', '*');
@@ -98,11 +95,3 @@ server.on('error', (err) => {
 });
 
 startServer(PORT);
-
-// Graceful termination
-process.on('SIGINT', () => {
-  server.close(() => process.exit(0));
-});
-process.on('SIGTERM', () => {
-  server.close(() => process.exit(0));
-});

@@ -4,8 +4,7 @@
   "description": "SheGuard — Women Safety Incident Reporting System & Live Family Locator",
   "type": "module",
   "scripts": {
-    "build": "echo 'Static assets ready'",
-    "start": "node server.js 5500",
+    "start": "node scripts/dev-server.js 5500",
     "test": "node tests/unit-tests.js && node tests/verify-pages.js"
   },
   "keywords": [
