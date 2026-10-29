@@ -1,17 +1,15 @@
 /**
  * SheGuard - Firebase Client Configuration
- * 
- * Replace placeholders below with your actual Firebase project settings
- * from the Firebase Console (Project Settings > General > Your apps > Web app)
- * or supply window.SHEGUARD_FIREBASE_CONFIG in your environment.
+ * Connected to live Firebase project: careerai-a4947
  */
 export const firebaseConfig = (typeof window !== 'undefined' && window.SHEGUARD_FIREBASE_CONFIG) ? window.SHEGUARD_FIREBASE_CONFIG : {
-  apiKey: "AIzaSy_REPLACE_WITH_YOUR_FIREBASE_API_KEY",
-  authDomain: "sheguard-safety.firebaseapp.com",
-  projectId: "sheguard-safety",
-  storageBucket: "sheguard-safety.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef1234567890"
+  apiKey: "AIzaSyD7tZGL40KYyAYKhSBuVwLslfrYo2yTF_k",
+  authDomain: "careerai-a4947.firebaseapp.com",
+  projectId: "careerai-a4947",
+  storageBucket: "careerai-a4947.firebasestorage.app",
+  messagingSenderId: "142840093345",
+  appId: "1:142840093345:web:ab49605bebf726c9cf6ee0",
+  measurementId: "G-PY404WWEY9"
 };
 
 /**
