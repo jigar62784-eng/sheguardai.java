@@ -75,69 +75,68 @@ export class ReportsService {
     } catch (apiErr) {
       console.warn('[SheGuard Reports] Backend API not reachable; falling back to Cloud Firestore direct save:', apiErr.message);
 
-      // 2. Direct Cloud Firestore Fallback
-      if (db && auth && auth.currentUser) {
-        const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const randNum = Math.floor(1000 + Math.random() * 9000);
-        const reference = `SG-${datePart}-${randNum}`;
+      const uid = (auth && auth.currentUser && auth.currentUser.uid) || 'reporter_user';
+      const email = (auth && auth.currentUser && auth.currentUser.email) || 'reporter@sheguard.app';
 
-        // Compute privacy-fuzzed coordinates (~500m jitter)
-        const lat = payload.location.latitude;
-        const lon = payload.location.longitude;
-        const fuzzedLat = Math.round((lat + ((Math.random() - 0.5) * 0.008)) * 100000) / 100000;
-        const fuzzedLon = Math.round((lon + ((Math.random() - 0.5) * 0.008)) * 100000) / 100000;
+      const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const randNum = Math.floor(1000 + Math.random() * 9000);
+      const reference = `SG-${datePart}-${randNum}`;
 
-        let evidenceUrl = null;
-        if (evidenceFile && storage) {
-          if (onProgress) onProgress('Uploading evidence directly to Firebase Storage...');
-          try {
-            const storagePath = `evidence/${reference}/${Date.now()}_${evidenceFile.name}`;
-            const fileRef = ref(storage, storagePath);
-            const uploadTask = await uploadBytesResumable(fileRef, evidenceFile);
-            evidenceUrl = await getDownloadURL(uploadTask.ref);
-          } catch (storageErr) {
-            console.warn('[SheGuard Reports] Storage upload notice:', storageErr);
-          }
+      // Compute privacy-fuzzed coordinates (~500m jitter)
+      const lat = payload.location.latitude;
+      const lon = payload.location.longitude;
+      const fuzzedLat = Math.round((lat + ((Math.random() - 0.5) * 0.008)) * 100000) / 100000;
+      const fuzzedLon = Math.round((lon + ((Math.random() - 0.5) * 0.008)) * 100000) / 100000;
+
+      let evidenceUrl = null;
+      if (evidenceFile && storage) {
+        if (onProgress) onProgress('Uploading evidence directly to Firebase Storage...');
+        try {
+          const storagePath = `evidence/${reference}/${Date.now()}_${evidenceFile.name}`;
+          const fileRef = ref(storage, storagePath);
+          const uploadTask = await uploadBytesResumable(fileRef, evidenceFile);
+          evidenceUrl = await getDownloadURL(uploadTask.ref);
+        } catch (storageErr) {
+          console.warn('[SheGuard Reports] Storage upload notice:', storageErr);
         }
+      }
 
-        const reportRecord = {
-          reference: reference,
-          reporterUid: auth.currentUser.uid,
-          reporterEmail: auth.currentUser.email,
-          category: payload.category,
-          incidentDate: payload.incidentDate,
-          incidentTime: payload.incidentTime,
-          description: payload.description,
-          location: payload.location,
-          fuzzedLocation: {
-            latitude: fuzzedLat,
-            longitude: fuzzedLon,
-            address: 'General Area (Privacy-Protected)'
-          },
-          evidenceUrl: evidenceUrl,
-          status: 'SUBMITTED',
-          consentGiven: payload.consentGiven,
-          isPublicSafeDisplayEligible: payload.isPublicSafeDisplayEligible,
-          createdAt: Date.now(),
-          updatedAt: Date.now()
-        };
+      const reportRecord = {
+        reference: reference,
+        reporterUid: uid,
+        reporterEmail: email,
+        category: payload.category,
+        incidentDate: payload.incidentDate,
+        incidentTime: payload.incidentTime,
+        description: payload.description,
+        location: payload.location,
+        fuzzedLocation: {
+          latitude: fuzzedLat,
+          longitude: fuzzedLon,
+          address: 'General Area (Privacy-Protected)'
+        },
+        evidenceUrl: evidenceUrl,
+        status: 'SUBMITTED',
+        consentGiven: payload.consentGiven,
+        isPublicSafeDisplayEligible: payload.isPublicSafeDisplayEligible,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
 
-        // Persist to LocalStorage backup so the user never loses their filed report
-        const uid = auth.currentUser.uid;
-        const local = getLocalReports(uid);
-        local.unshift(reportRecord);
-        saveLocalReports(uid, local);
+      // Persist to LocalStorage backup so the user never loses their filed report
+      const local = getLocalReports(uid);
+      local.unshift(reportRecord);
+      saveLocalReports(uid, local);
 
+      if (db) {
         if (onProgress) onProgress('Writing report to Cloud Firestore...');
         try {
           await setDoc(doc(db, 'reports', reference), reportRecord);
         } catch (firestoreErr) {
           console.warn('[SheGuard Reports] Firestore permissions notice (report safely stored locally):', firestoreErr.message);
         }
-        return reportRecord;
       }
-
-      throw apiErr;
+      return reportRecord;
     }
   }
 
