@@ -20,9 +20,13 @@ import {
   getDoc, 
   setDoc, 
   updateDoc, 
+  deleteDoc,
   collection, 
+  addDoc,
+  getDocs,
   query, 
   where, 
+  orderBy,
   onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { 
@@ -77,9 +81,13 @@ export {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   collection,
+  addDoc,
+  getDocs,
   query,
   where,
+  orderBy,
   onSnapshot,
   ref,
   uploadBytesResumable,

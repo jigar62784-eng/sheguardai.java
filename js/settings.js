@@ -4,6 +4,7 @@
 import { api } from './api.js';
 import { authService } from './auth.js';
 import { showToast, confirmAction, escapeHtml } from './ui.js';
+import { db, auth, doc, setDoc } from './firebase.js';
 
 export class SettingsController {
   constructor() {
@@ -16,6 +17,12 @@ export class SettingsController {
 
     this.profile = await authService.loadUserProfile();
     this.populateForm();
+
+    // Load custom map API key if configured
+    const mapApiKeyInput = document.getElementById('settingsMapApiKey');
+    if (mapApiKeyInput) {
+      mapApiKeyInput.value = localStorage.getItem('sheguard_map_api_key') || '';
+    }
   }
 
   populateForm() {
@@ -60,7 +67,39 @@ export class SettingsController {
       this.profile = updated;
       showToast('Settings saved successfully.', 'success');
     } catch (err) {
+      if (db && auth && auth.currentUser) {
+        try {
+          const profileData = {
+            displayName,
+            phoneNumber,
+            emergencyMedicalNotes,
+            locationSharingEnabled,
+            emailNotificationsEnabled,
+            updatedAt: Date.now()
+          };
+          await setDoc(doc(db, 'users', auth.currentUser.uid), profileData, { merge: true });
+          this.profile = { ...(this.profile || {}), ...profileData };
+          showToast('Settings saved to cloud successfully.', 'success');
+          return;
+        } catch (dbErr) {
+          console.warn('[Settings] Firestore profile save notice:', dbErr);
+        }
+      }
       showToast('Failed to save settings: ' + err.message, 'danger');
+    }
+  }
+
+  /**
+   * Saves custom map API key
+   */
+  saveMapApiKey(key) {
+    const trimmed = (key || '').trim();
+    if (trimmed) {
+      localStorage.setItem('sheguard_map_api_key', trimmed);
+      showToast('Custom Map API key saved. Tiles updated.', 'success');
+    } else {
+      localStorage.removeItem('sheguard_map_api_key');
+      showToast('Using default OpenStreetMap watermark-free tiles.', 'info');
     }
   }
 

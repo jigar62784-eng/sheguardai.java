@@ -107,6 +107,25 @@
       </div>
     </div>
 
+    <!-- Map & Tile Provider Configuration -->
+    <div class="card" style="margin-bottom: var(--space-6);">
+      <h2 class="card-title">Map & Tile Provider Settings</h2>
+      <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: var(--space-4);">
+        SheGuard defaults to official OpenStreetMap tiles (100% free, zero watermarks, no API key required). If you wish to use custom enterprise Mapbox or CARTO basemaps, enter your API key below.
+      </p>
+
+      <div class="form-group" style="margin-bottom: var(--space-4);">
+        <label for="settingsMapApiKey" class="form-label">Custom Map API Key (Optional)</label>
+        <div style="display: flex; gap: var(--space-2);">
+          <input type="text" id="settingsMapApiKey" class="form-control" placeholder="Leave empty for free OpenStreetMap tiles, or paste Mapbox/CARTO key">
+          <button type="button" id="saveMapApiKeyBtn" class="btn btn-secondary" style="white-space: nowrap;">Save Map Key</button>
+        </div>
+        <div class="form-hint" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+          Current status: <span id="mapStatusText" style="color: #10B981; font-weight: bold;">Active (Free OpenStreetMap tiles with dark theme)</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Data Portability & Rights -->
     <div class="card" style="margin-bottom: var(--space-6);">
       <h2 class="card-title">Data Privacy & Portability</h2>
@@ -162,6 +181,15 @@
 
     document.getElementById('settingsLocationSharing').addEventListener('change', async (e) => {
       await settingsController.toggleMasterLocationSharing(e.target.checked);
+    });
+
+    document.getElementById('saveMapApiKeyBtn').addEventListener('click', () => {
+      const key = document.getElementById('settingsMapApiKey').value;
+      settingsController.saveMapApiKey(key);
+      const statusText = document.getElementById('mapStatusText');
+      if (statusText) {
+        statusText.textContent = key.trim() ? 'Active (Custom Map Provider Key applied)' : 'Active (Free OpenStreetMap tiles with dark theme)';
+      }
     });
 
     document.getElementById('exportUserDataBtn').addEventListener('click', async () => {

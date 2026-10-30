@@ -8,6 +8,7 @@ import { locationService } from './location.js';
 import { calculateDistance, formatDistance } from './distance.js';
 import { routingService } from './routing.js';
 import { formatDateTime, timeAgo, escapeHtml, showToast } from './ui.js';
+import { db, auth, doc, setDoc, getDocs, collection } from './firebase.js';
 
 export class FamilyLocatorController {
   constructor(containerId = 'familyMap') {
@@ -66,7 +67,7 @@ export class FamilyLocatorController {
       this.currentUserCoords = pos;
       this.renderUserMarker(pos);
 
-      // Share live location with authorized family members via backend
+      // Share live location with authorized family members via backend or Firestore
       try {
         await api.post('/locations/share', {
           latitude: pos.latitude,
@@ -75,7 +76,21 @@ export class FamilyLocatorController {
           timestamp: pos.timestamp
         });
       } catch (err) {
-        // Backend might be offline or sharing paused
+        if (db && auth && auth.currentUser) {
+          try {
+            await setDoc(doc(db, 'locations', auth.currentUser.uid), {
+              userUid: auth.currentUser.uid,
+              displayName: auth.currentUser.displayName || auth.currentUser.email,
+              latitude: pos.latitude,
+              longitude: pos.longitude,
+              accuracy: pos.accuracy,
+              timestamp: pos.timestamp || Date.now(),
+              updatedAt: Date.now()
+            });
+          } catch (e) {
+            console.warn('[Family Locator] Firestore location sync notice:', e);
+          }
+        }
       }
 
       return pos;
@@ -139,36 +154,54 @@ export class FamilyLocatorController {
     try {
       const members = await api.get('/family/locations');
       this.familyLocations = members || [];
-
-      if (!this.familyLocations || this.familyLocations.length === 0) {
-        if (familyListContainer) {
-          familyListContainer.innerHTML = `
-            <div class="empty-state" style="padding: var(--space-6);">
-              <div class="empty-state-icon">👨‍👩‍👧</div>
-              <h4 style="color: #fff; margin-bottom: 4px;">No Shared Locations Yet</h4>
-              <p style="font-size: 12px; color: #94A3B8;">Invite family members in Family Settings to see their live safety location.</p>
-              <a href="family.html" class="btn btn-secondary btn-sm" style="margin-top: 12px;">Manage Family Circle</a>
-            </div>
-          `;
-        }
-        if (nearestContainer) {
-          nearestContainer.innerHTML = `<p style="font-size: 12px; color: #94A3B8; text-align: center;">No active family members in range.</p>`;
-        }
-        return;
-      }
-
-      // Process locations and calculate distances
-      this.recalculateDistances();
     } catch (err) {
-      console.warn('[Family Locator] Failed to load family locations:', err.message);
+      if (db && auth && auth.currentUser) {
+        try {
+          const snap = await getDocs(collection(db, 'locations'));
+          const list = [];
+          snap.forEach(d => {
+            const data = d.data();
+            if (data.userUid !== auth.currentUser.uid) {
+              list.push({
+                memberId: data.userUid,
+                name: data.displayName || 'Family Member',
+                latitude: data.latitude,
+                longitude: data.longitude,
+                timestamp: data.timestamp || data.updatedAt,
+                sharingStatus: 'SHARING',
+                isLive: true
+              });
+            }
+          });
+          this.familyLocations = list;
+        } catch (dbErr) {
+          console.warn('[Family Locator] Firestore query notice:', dbErr);
+          this.familyLocations = [];
+        }
+      } else {
+        this.familyLocations = [];
+      }
+    }
+
+    if (!this.familyLocations || this.familyLocations.length === 0) {
       if (familyListContainer) {
         familyListContainer.innerHTML = `
-          <div class="alert alert-warning" style="font-size: 12px;">
-            Unable to connect to Family Location service: ${escapeHtml(err.message)}
+          <div class="empty-state" style="padding: var(--space-6);">
+            <div class="empty-state-icon">👨‍👩‍👧</div>
+            <h4 style="color: #fff; margin-bottom: 4px;">No Shared Locations Yet</h4>
+            <p style="font-size: 12px; color: #94A3B8;">Invite family members in Family Settings to see their live safety location.</p>
+            <a href="family.html" class="btn btn-secondary btn-sm" style="margin-top: 12px;">Manage Family Circle</a>
           </div>
         `;
       }
+      if (nearestContainer) {
+        nearestContainer.innerHTML = `<p style="font-size: 12px; color: #94A3B8; text-align: center;">No active family members in range.</p>`;
+      }
+      return;
     }
+
+    // Process locations and calculate distances
+    this.recalculateDistances();
   }
 
   /**

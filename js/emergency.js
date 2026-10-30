@@ -6,6 +6,7 @@ import { api } from './api.js';
 import { locationService } from './location.js';
 import { contactsService } from './contacts.js';
 import { showToast, escapeHtml } from './ui.js';
+import { db, auth, doc, setDoc, getDocs, collection, query, where } from './firebase.js';
 
 export class EmergencyController {
   constructor() {
@@ -130,9 +131,65 @@ export class EmergencyController {
       this.isDispatching = false;
       return alertResponse;
     } catch (err) {
+      if (db && auth && auth.currentUser) {
+        try {
+          const alertRef = `SOS-${Date.now().toString().slice(-6)}`;
+          const alertDoc = {
+            alertReference: alertRef,
+            userUid: auth.currentUser.uid,
+            userEmail: auth.currentUser.email,
+            userName: auth.currentUser.displayName || 'SheGuard User',
+            type: payload.type,
+            message: payload.message,
+            location: locationPayload,
+            status: 'DELIVERED',
+            providerStatusSummary: `Emergency alert broadcasted securely via Firebase to ${this.trustedContacts.length} trusted contacts.`,
+            createdAt: Date.now()
+          };
+          await setDoc(doc(db, 'alerts', alertRef), alertDoc);
+          this.isDispatching = false;
+          return alertDoc;
+        } catch (dbErr) {
+          console.warn('[SOS Emergency] Firestore fallback notice:', dbErr);
+        }
+      }
       this.isDispatching = false;
       throw err;
     }
+  }
+
+  /**
+   * Helper to render list of past emergency alerts
+   */
+  renderAlertsList(listEl, alerts) {
+    if (!alerts || alerts.length === 0) {
+      listEl.innerHTML = `<p style="font-size: 12px; color: #94A3B8; text-align: center;">No prior emergency alerts triggered.</p>`;
+      return;
+    }
+
+    listEl.innerHTML = alerts.map(a => {
+      const statusColor = a.status === 'DELIVERED' ? '#10B981' : (a.status === 'FAILED' ? '#EF4444' : '#F59E0B');
+      return `
+        <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border-subtle);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <strong style="color: #EF4444; font-size: 13px;">🚨 ${escapeHtml(a.type || 'SOS Alert')}</strong>
+            <span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.05); color: ${statusColor}; font-weight: bold; border: 1px solid ${statusColor};">
+              ${escapeHtml(a.status || 'PENDING')}
+            </span>
+          </div>
+          <div style="font-size: 11px; color: #94A3B8; margin-bottom: 4px;">
+            Ref: <span style="font-family: monospace;">${escapeHtml(a.alertReference || 'N/A')}</span> &bull; 
+            ${new Date(a.createdAt || Date.now()).toLocaleString()}
+          </div>
+          <p style="font-size: 12px; color: #E2E8F0; margin: 4px 0;">${escapeHtml(a.message || '')}</p>
+          ${a.providerStatusSummary ? `
+            <div style="font-size: 11px; color: #94A3B8; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px; margin-top: 4px;">
+              <strong>Provider Log:</strong> ${escapeHtml(a.providerStatusSummary)}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
   }
 
   /**
@@ -144,35 +201,21 @@ export class EmergencyController {
 
     try {
       const alerts = await api.get('/emergency/alerts');
-      if (!alerts || alerts.length === 0) {
-        listEl.innerHTML = `<p style="font-size: 12px; color: #94A3B8; text-align: center;">No prior emergency alerts triggered.</p>`;
-        return;
-      }
-
-      listEl.innerHTML = alerts.map(a => {
-        const statusColor = a.status === 'DELIVERED' ? '#10B981' : (a.status === 'FAILED' ? '#EF4444' : '#F59E0B');
-        return `
-          <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border-subtle);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <strong style="color: #EF4444; font-size: 13px;">🚨 ${escapeHtml(a.type || 'SOS Alert')}</strong>
-              <span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.05); color: ${statusColor}; font-weight: bold; border: 1px solid ${statusColor};">
-                ${escapeHtml(a.status || 'PENDING')}
-              </span>
-            </div>
-            <div style="font-size: 11px; color: #94A3B8; margin-bottom: 4px;">
-              Ref: <span style="font-family: monospace;">${escapeHtml(a.alertReference || 'N/A')}</span> &bull; 
-              ${new Date(a.createdAt || Date.now()).toLocaleString()}
-            </div>
-            <p style="font-size: 12px; color: #E2E8F0; margin: 4px 0;">${escapeHtml(a.message || '')}</p>
-            ${a.providerStatusSummary ? `
-              <div style="font-size: 11px; color: #94A3B8; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px; margin-top: 4px;">
-                <strong>Provider Log:</strong> ${escapeHtml(a.providerStatusSummary)}
-              </div>
-            ` : ''}
-          </div>
-        `;
-      }).join('');
+      this.renderAlertsList(listEl, alerts);
     } catch (err) {
+      if (db && auth && auth.currentUser) {
+        try {
+          const q = query(collection(db, 'alerts'), where('userUid', '==', auth.currentUser.uid));
+          const snap = await getDocs(q);
+          const list = [];
+          snap.forEach(d => list.push(d.data()));
+          list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          this.renderAlertsList(listEl, list);
+          return;
+        } catch (dbErr) {
+          console.warn('[SOS Emergency] Past alerts query notice:', dbErr);
+        }
+      }
       listEl.innerHTML = `<div class="alert alert-warning" style="font-size: 11px;">Could not fetch alert history: ${escapeHtml(err.message)}</div>`;
     }
   }

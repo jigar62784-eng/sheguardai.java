@@ -12,9 +12,23 @@ export const CONFIG = {
     DEFAULT_ZOOM: 12,
     MAX_ZOOM: 19,
     MIN_ZOOM: 3,
-    TILE_LAYER_URL: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    TILE_LAYER_DARK: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    ATTRIBUTION: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    // OpenStreetMap official tiles (Zero watermarks, free & open)
+    TILE_LAYER_URL: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    get TILE_LAYER_DARK() {
+      const key = (typeof window !== 'undefined' && (window.SHEGUARD_MAP_API_KEY || (typeof localStorage !== 'undefined' && localStorage.getItem('sheguard_map_api_key')))) || '';
+      if (key) {
+        if (key.startsWith('pk.')) {
+          return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${key}`;
+        }
+        return `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key=${key}`;
+      }
+      return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    },
+    // Optional map API key for users providing custom Mapbox / CARTO / Stadia keys
+    get API_KEY() {
+      return (typeof window !== 'undefined' && (window.SHEGUARD_MAP_API_KEY || (typeof localStorage !== 'undefined' && localStorage.getItem('sheguard_map_api_key')))) || '';
+    },
+    ATTRIBUTION: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
   },
 
   // OpenStreetMap-Compatible Routing Service (OSRM)

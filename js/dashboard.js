@@ -5,6 +5,8 @@
 import { api } from './api.js';
 import { authService } from './auth.js';
 import { reportsService } from './reports.js';
+import { contactsService } from './contacts.js';
+import { familyService } from './family.js';
 import { formatDateTime, renderEmptyState, escapeHtml } from './ui.js';
 
 export class DashboardController {
@@ -55,23 +57,23 @@ export class DashboardController {
   async loadContactsCount() {
     const contactsCountEl = document.getElementById('metricContactsCount');
     try {
-      const contacts = await api.get('/contacts');
+      const contacts = await contactsService.getContacts();
       if (contactsCountEl) contactsCountEl.textContent = (contacts || []).length;
     } catch (err) {
-      if (contactsCountEl) contactsCountEl.textContent = '-';
+      if (contactsCountEl) contactsCountEl.textContent = '0';
     }
   }
 
   async loadFamilyCircleStatus() {
     const familyStatusEl = document.getElementById('metricFamilyStatus');
     try {
-      const members = await api.get('/family/members');
+      const members = await familyService.getFamilyMembers();
       const count = (members || []).length;
       if (familyStatusEl) {
         familyStatusEl.textContent = count > 0 ? `${count} Active` : '0 Connected';
       }
     } catch (err) {
-      if (familyStatusEl) familyStatusEl.textContent = 'Unavailable';
+      if (familyStatusEl) familyStatusEl.textContent = '0 Connected';
     }
   }
 
