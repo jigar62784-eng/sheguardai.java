@@ -31,9 +31,22 @@ function getLocalInvitations(uid, email = '') {
     // Cross-match invitations matching this user's email across localStorage
     if (email) {
       const lowerEmail = email.toLowerCase().trim();
+
+      // Check current user's own invitations (e.g. self-invitations for testing)
+      if (data && Array.isArray(data.outgoing)) {
+        data.outgoing.forEach(outInv => {
+          if (outInv.recipientEmail && outInv.recipientEmail.toLowerCase().trim() === lowerEmail && outInv.status === 'PENDING') {
+            if (!data.incoming.some(inc => inc.id === outInv.id)) {
+              data.incoming.push(outInv);
+            }
+          }
+        });
+      }
+
+      // Check across other accounts stored in this browser
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('sheguard_invitations_') && key !== `sheguard_invitations_${uid}`) {
+        if (key && key.startsWith('sheguard_invitations_')) {
           try {
             const otherData = JSON.parse(localStorage.getItem(key));
             if (otherData && Array.isArray(otherData.outgoing)) {
@@ -188,12 +201,33 @@ export class FamilyService {
     const uid = auth?.currentUser?.uid || 'guest';
     const email = auth?.currentUser?.email || '';
     const local = getLocalInvitations(uid, email);
+
+    let senderEmail = 'Family Member';
+    let relationship = 'Family';
+
     if (local.incoming) {
       const idx = local.incoming.findIndex(i => i.id === invitationId);
       if (idx !== -1) {
+        const found = local.incoming[idx];
+        senderEmail = found.senderEmail || found.senderName || senderEmail;
+        relationship = found.relationship || relationship;
         local.incoming.splice(idx, 1);
         saveLocalInvitations(uid, local);
       }
+    }
+
+    // Add to connected family circle
+    const myFam = getLocalFamily(uid);
+    if (!myFam.some(f => f.email === senderEmail)) {
+      myFam.push({
+        id: 'fam_' + Date.now(),
+        displayName: senderEmail.split('@')[0],
+        email: senderEmail,
+        relationship: relationship,
+        canViewLocation: true,
+        sharingStatus: 'ACTIVE'
+      });
+      saveLocalFamily(uid, myFam);
     }
 
     try {
