@@ -23,10 +23,34 @@ function saveLocalFamily(uid, members) {
   }
 }
 
-function getLocalInvitations(uid) {
+function getLocalInvitations(uid, email = '') {
   try {
     const raw = localStorage.getItem(`sheguard_invitations_${uid}`);
-    return raw ? JSON.parse(raw) : { incoming: [], outgoing: [] };
+    const data = raw ? JSON.parse(raw) : { incoming: [], outgoing: [] };
+
+    // Cross-match invitations matching this user's email across localStorage
+    if (email) {
+      const lowerEmail = email.toLowerCase().trim();
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sheguard_invitations_') && key !== `sheguard_invitations_${uid}`) {
+          try {
+            const otherData = JSON.parse(localStorage.getItem(key));
+            if (otherData && Array.isArray(otherData.outgoing)) {
+              otherData.outgoing.forEach(outInv => {
+                if (outInv.recipientEmail && outInv.recipientEmail.toLowerCase().trim() === lowerEmail && outInv.status === 'PENDING') {
+                  if (!data.incoming.some(inc => inc.id === outInv.id)) {
+                    data.incoming.push(outInv);
+                  }
+                }
+              });
+            }
+          } catch (err) {}
+        }
+      }
+    }
+
+    return data;
   } catch (e) {
     return { incoming: [], outgoing: [] };
   }
@@ -78,7 +102,8 @@ export class FamilyService {
    */
   async getInvitations() {
     const uid = auth?.currentUser?.uid || 'guest';
-    const local = getLocalInvitations(uid);
+    const email = auth?.currentUser?.email || '';
+    const local = getLocalInvitations(uid, email);
     let incoming = [];
     let outgoing = [];
 
@@ -161,7 +186,8 @@ export class FamilyService {
    */
   async acceptInvitation(invitationId) {
     const uid = auth?.currentUser?.uid || 'guest';
-    const local = getLocalInvitations(uid);
+    const email = auth?.currentUser?.email || '';
+    const local = getLocalInvitations(uid, email);
     if (local.incoming) {
       const idx = local.incoming.findIndex(i => i.id === invitationId);
       if (idx !== -1) {
@@ -198,7 +224,8 @@ export class FamilyService {
    */
   async rejectInvitation(invitationId) {
     const uid = auth?.currentUser?.uid || 'guest';
-    const local = getLocalInvitations(uid);
+    const email = auth?.currentUser?.email || '';
+    const local = getLocalInvitations(uid, email);
     if (local.incoming) {
       local.incoming = local.incoming.filter(i => i.id !== invitationId);
       saveLocalInvitations(uid, local);

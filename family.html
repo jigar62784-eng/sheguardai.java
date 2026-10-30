@@ -139,9 +139,17 @@
             ${outgoing.length > 0 ? `
               <h4 style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin: 12px 0 8px;">Sent by You (Awaiting Acceptance)</h4>
               ${outgoing.map(inv => `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 6px; font-size: 13px;">
-                  <span>Sent to: <strong style="color: #E2E8F0;">${escapeHtml(inv.recipientEmail)}</strong> (${escapeHtml(inv.relationship)})</span>
-                  <span class="badge badge-pending">Pending</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 8px; font-size: 13px;">
+                  <div>
+                    <span>Sent to: <strong style="color: #E2E8F0;">${escapeHtml(inv.recipientEmail)}</strong> (${escapeHtml(inv.relationship)})</span>
+                    <div style="font-size: 11px; color: #94A3B8; margin-top: 3px;">
+                      Direct Share Link: <a href="mailto:${encodeURIComponent(inv.recipientEmail)}?subject=${encodeURIComponent('Join my SheGuard Family Circle')}&body=${encodeURIComponent('Hi, please accept my invitation to join my SheGuard emergency safety circle at https://sheguardjava.vercel.app/family.html')}" style="color: #38BDF8;">📧 Send via Email App</a>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <span class="badge badge-pending">Pending</span>
+                    <button class="btn btn-outline btn-sm copy-invite-btn" data-email="${escapeHtml(inv.recipientEmail)}" style="font-size: 11px; padding: 4px 8px;">📋 Copy Link</button>
+                  </div>
                 </div>
               `).join('')}
             ` : ''}
@@ -159,6 +167,14 @@
                 showToast(err.message, 'danger');
                 btn.disabled = false;
               }
+            });
+          });
+
+          pendingContainer.querySelectorAll('.copy-invite-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const url = `${window.location.origin}/family.html`;
+              navigator.clipboard.writeText(`Hi, please connect with me on SheGuard Family Safety Network: ${url}`);
+              showToast('Invitation link copied to clipboard!', 'info');
             });
           });
 
