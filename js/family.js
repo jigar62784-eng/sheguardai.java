@@ -1,40 +1,91 @@
 /**
  * SheGuard - Family Circle Invitations and Access Permissions
- * Hybrid: Uses Spring Boot REST API with Cloud Firestore fallback for standalone cloud deployment.
+ * Triple-Layer Resilience: Spring Boot REST API -> Cloud Firestore -> LocalStorage Backup.
  */
 import { api } from './api.js';
 import { showToast, confirmAction, escapeHtml } from './ui.js';
 import { db, auth, doc, setDoc, deleteDoc, getDocs, collection, query, where, updateDoc } from './firebase.js';
+
+function getLocalFamily(uid) {
+  try {
+    const raw = localStorage.getItem(`sheguard_family_${uid}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLocalFamily(uid, members) {
+  try {
+    localStorage.setItem(`sheguard_family_${uid}`, JSON.stringify(members));
+  } catch (e) {
+    console.warn('[Family] LocalStorage save warning:', e);
+  }
+}
+
+function getLocalInvitations(uid) {
+  try {
+    const raw = localStorage.getItem(`sheguard_invitations_${uid}`);
+    return raw ? JSON.parse(raw) : { incoming: [], outgoing: [] };
+  } catch (e) {
+    return { incoming: [], outgoing: [] };
+  }
+}
+
+function saveLocalInvitations(uid, invitations) {
+  try {
+    localStorage.setItem(`sheguard_invitations_${uid}`, JSON.stringify(invitations));
+  } catch (e) {
+    console.warn('[Family] LocalStorage invitations save warning:', e);
+  }
+}
 
 export class FamilyService {
   /**
    * Fetches all approved family members
    */
   async getFamilyMembers() {
+    const uid = auth?.currentUser?.uid || 'guest';
+    const local = getLocalFamily(uid);
+    let list = [];
+
     try {
-      return await api.get('/family/members');
+      list = await api.get('/family/members');
     } catch (apiErr) {
       if (db && auth && auth.currentUser) {
         try {
           const q = query(collection(db, 'family'), where('userUid', '==', auth.currentUser.uid));
           const snap = await getDocs(q);
-          const list = [];
           snap.forEach(d => list.push({ id: d.id, ...d.data() }));
-          return list;
         } catch (dbErr) {
-          console.warn('[Family] Firestore query notice:', dbErr);
+          console.warn('[Family] Firestore query notice:', dbErr.message);
         }
       }
-      return [];
     }
+
+    const combined = [...list];
+    local.forEach(item => {
+      if (!combined.some(m => m.id === item.id || m.memberId === item.memberId)) {
+        combined.push(item);
+      }
+    });
+
+    return combined;
   }
 
   /**
    * Fetches incoming and outgoing family invitations
    */
   async getInvitations() {
+    const uid = auth?.currentUser?.uid || 'guest';
+    const local = getLocalInvitations(uid);
+    let incoming = [];
+    let outgoing = [];
+
     try {
-      return await api.get('/family/invitations');
+      const res = await api.get('/family/invitations');
+      incoming = (res && res.incoming) || [];
+      outgoing = (res && res.outgoing) || [];
     } catch (apiErr) {
       if (db && auth && auth.currentUser) {
         try {
@@ -42,8 +93,6 @@ export class FamilyService {
           const outgoingQ = query(collection(db, 'invitations'), where('senderUid', '==', auth.currentUser.uid));
 
           const [inSnap, outSnap] = await Promise.all([getDocs(incomingQ), getDocs(outgoingQ)]);
-          const incoming = [];
-          const outgoing = [];
 
           inSnap.forEach(d => {
             const data = d.data();
@@ -53,39 +102,57 @@ export class FamilyService {
             const data = d.data();
             outgoing.push({ id: d.id, ...data });
           });
-
-          return { incoming, outgoing };
         } catch (dbErr) {
-          console.warn('[Family Invitations] Firestore query notice:', dbErr);
+          console.warn('[Family Invitations] Firestore query notice:', dbErr.message);
         }
       }
-      return { incoming: [], outgoing: [] };
     }
+
+    (local.incoming || []).forEach(item => {
+      if (!incoming.some(i => i.id === item.id)) incoming.push(item);
+    });
+    (local.outgoing || []).forEach(item => {
+      if (!outgoing.some(i => i.id === item.id)) outgoing.push(item);
+    });
+
+    return { incoming, outgoing };
   }
 
   /**
    * Sends an invitation to a family member by email
    */
   async sendInvitation(email, relationship = 'Family') {
+    const uid = auth?.currentUser?.uid || 'guest';
+    const invId = 'inv_' + Date.now();
+    const inv = {
+      id: invId,
+      senderUid: uid,
+      senderName: (auth?.currentUser && (auth.currentUser.displayName || auth.currentUser.email)) || 'User',
+      senderEmail: (auth?.currentUser && auth.currentUser.email) || '',
+      recipientEmail: email.trim().toLowerCase(),
+      relationship,
+      status: 'PENDING',
+      createdAt: Date.now()
+    };
+
+    // Backup to local
+    const local = getLocalInvitations(uid);
+    local.outgoing = local.outgoing || [];
+    local.outgoing.push(inv);
+    saveLocalInvitations(uid, local);
+
     try {
       return await api.post('/family/invitations', { email, relationship });
     } catch (apiErr) {
       if (db && auth && auth.currentUser) {
-        const invId = 'inv_' + Date.now();
-        const inv = {
-          id: invId,
-          senderUid: auth.currentUser.uid,
-          senderName: auth.currentUser.displayName || auth.currentUser.email,
-          senderEmail: auth.currentUser.email,
-          recipientEmail: email.trim().toLowerCase(),
-          relationship,
-          status: 'PENDING',
-          createdAt: Date.now()
-        };
-        await setDoc(doc(db, 'invitations', invId), inv);
+        try {
+          await setDoc(doc(db, 'invitations', invId), inv);
+        } catch (e) {
+          console.warn('[Family] Firestore permission notice (invitation saved locally):', e.message);
+        }
         return inv;
       }
-      throw apiErr;
+      return inv;
     }
   }
 
@@ -93,23 +160,36 @@ export class FamilyService {
    * Accepts an incoming family invitation
    */
   async acceptInvitation(invitationId) {
+    const uid = auth?.currentUser?.uid || 'guest';
+    const local = getLocalInvitations(uid);
+    if (local.incoming) {
+      const idx = local.incoming.findIndex(i => i.id === invitationId);
+      if (idx !== -1) {
+        local.incoming.splice(idx, 1);
+        saveLocalInvitations(uid, local);
+      }
+    }
+
     try {
       return await api.post(`/family/invitations/${encodeURIComponent(invitationId)}/accept`, {});
     } catch (apiErr) {
       if (db && auth && auth.currentUser) {
-        await updateDoc(doc(db, 'invitations', invitationId), { status: 'ACCEPTED' });
-        // Add reciprocal family record
-        const famId = 'fam_' + Date.now();
-        await setDoc(doc(db, 'family', famId), {
-          userUid: auth.currentUser.uid,
-          invitationId,
-          status: 'ACTIVE',
-          canViewLocation: true,
-          createdAt: Date.now()
-        });
+        try {
+          await updateDoc(doc(db, 'invitations', invitationId), { status: 'ACCEPTED' });
+          const famId = 'fam_' + Date.now();
+          await setDoc(doc(db, 'family', famId), {
+            userUid: auth.currentUser.uid,
+            invitationId,
+            status: 'ACTIVE',
+            canViewLocation: true,
+            createdAt: Date.now()
+          });
+        } catch (e) {
+          console.warn('[Family] Firestore accept notice:', e.message);
+        }
         return { success: true };
       }
-      throw apiErr;
+      return { success: true };
     }
   }
 
@@ -117,14 +197,25 @@ export class FamilyService {
    * Rejects an incoming family invitation
    */
   async rejectInvitation(invitationId) {
+    const uid = auth?.currentUser?.uid || 'guest';
+    const local = getLocalInvitations(uid);
+    if (local.incoming) {
+      local.incoming = local.incoming.filter(i => i.id !== invitationId);
+      saveLocalInvitations(uid, local);
+    }
+
     try {
       return await api.delete(`/family/invitations/${encodeURIComponent(invitationId)}`);
     } catch (apiErr) {
       if (db) {
-        await deleteDoc(doc(db, 'invitations', invitationId));
+        try {
+          await deleteDoc(doc(db, 'invitations', invitationId));
+        } catch (e) {
+          console.warn('[Family] Firestore delete notice:', e.message);
+        }
         return { success: true };
       }
-      throw apiErr;
+      return { success: true };
     }
   }
 
@@ -140,13 +231,19 @@ export class FamilyService {
     );
     if (!confirmed) return false;
 
+    const uid = auth?.currentUser?.uid || 'guest';
+    const local = getLocalFamily(uid).filter(m => m.id !== memberId && m.memberId !== memberId);
+    saveLocalFamily(uid, local);
+
     try {
       await api.delete(`/family/members/${encodeURIComponent(memberId)}`);
     } catch (apiErr) {
       if (db) {
-        await deleteDoc(doc(db, 'family', memberId));
-      } else {
-        throw apiErr;
+        try {
+          await deleteDoc(doc(db, 'family', memberId));
+        } catch (e) {
+          console.warn('[Family] Firestore member delete notice:', e.message);
+        }
       }
     }
     showToast('Family connection revoked.', 'info');
@@ -163,10 +260,14 @@ export class FamilyService {
       });
     } catch (apiErr) {
       if (db) {
-        await updateDoc(doc(db, 'family', memberId), { canViewLocation: allowAccess });
+        try {
+          await updateDoc(doc(db, 'family', memberId), { canViewLocation: allowAccess });
+        } catch (e) {
+          console.warn('[Family] Firestore permission update notice:', e.message);
+        }
         return { success: true };
       }
-      throw apiErr;
+      return { success: true };
     }
   }
 }

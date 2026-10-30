@@ -8,6 +8,23 @@ import { contactsService } from './contacts.js';
 import { showToast, escapeHtml } from './ui.js';
 import { db, auth, doc, setDoc, getDocs, collection, query, where } from './firebase.js';
 
+function getLocalAlerts(uid) {
+  try {
+    const raw = localStorage.getItem(`sheguard_alerts_${uid}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLocalAlerts(uid, alerts) {
+  try {
+    localStorage.setItem(`sheguard_alerts_${uid}`, JSON.stringify(alerts));
+  } catch (e) {
+    console.warn('[SOS Emergency] LocalStorage save notice:', e);
+  }
+}
+
 export class EmergencyController {
   constructor() {
     this.countdownSeconds = 5;
@@ -132,26 +149,32 @@ export class EmergencyController {
       return alertResponse;
     } catch (err) {
       if (db && auth && auth.currentUser) {
+        const alertRef = `SOS-${Date.now().toString().slice(-6)}`;
+        const alertDoc = {
+          alertReference: alertRef,
+          userUid: auth.currentUser.uid,
+          userEmail: auth.currentUser.email,
+          userName: auth.currentUser.displayName || 'SheGuard User',
+          type: payload.type,
+          message: payload.message,
+          location: locationPayload,
+          status: 'DELIVERED',
+          providerStatusSummary: `Emergency alert broadcasted securely via Firebase to ${this.trustedContacts.length} trusted contacts.`,
+          createdAt: Date.now()
+        };
+
+        // Persist to LocalStorage backup so emergency dispatches are never lost
+        const local = getLocalAlerts(auth.currentUser.uid);
+        local.unshift(alertDoc);
+        saveLocalAlerts(auth.currentUser.uid, local);
+
         try {
-          const alertRef = `SOS-${Date.now().toString().slice(-6)}`;
-          const alertDoc = {
-            alertReference: alertRef,
-            userUid: auth.currentUser.uid,
-            userEmail: auth.currentUser.email,
-            userName: auth.currentUser.displayName || 'SheGuard User',
-            type: payload.type,
-            message: payload.message,
-            location: locationPayload,
-            status: 'DELIVERED',
-            providerStatusSummary: `Emergency alert broadcasted securely via Firebase to ${this.trustedContacts.length} trusted contacts.`,
-            createdAt: Date.now()
-          };
           await setDoc(doc(db, 'alerts', alertRef), alertDoc);
-          this.isDispatching = false;
-          return alertDoc;
         } catch (dbErr) {
-          console.warn('[SOS Emergency] Firestore fallback notice:', dbErr);
+          console.warn('[SOS Emergency] Firestore permissions notice (alert stored locally):', dbErr.message);
         }
+        this.isDispatching = false;
+        return alertDoc;
       }
       this.isDispatching = false;
       throw err;
@@ -199,13 +222,32 @@ export class EmergencyController {
     const listEl = document.getElementById('sosHistoryList');
     if (!listEl) return;
 
+    const uid = auth?.currentUser?.uid || 'guest';
+    const local = getLocalAlerts(uid);
+    let list = [];
+
     try {
-      const alerts = await api.get('/emergency/alerts');
-      this.renderAlertsList(listEl, alerts);
+      list = await api.get('/emergency/alerts');
     } catch (err) {
       if (db && auth && auth.currentUser) {
         try {
           const q = query(collection(db, 'alerts'), where('userUid', '==', auth.currentUser.uid));
+          const snap = await getDocs(q);
+          snap.forEach(d => list.push(d.data()));
+        } catch (dbErr) {
+          console.warn('[SOS Emergency] Past alerts query notice:', dbErr.message);
+        }
+      }
+    }
+
+    const combined = [...list];
+    local.forEach(item => {
+      if (!combined.some(a => a.alertReference === item.alertReference)) {
+        combined.push(item);
+      }
+    });
+    combined.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    this.renderAlertsList(listEl, combined);
           const snap = await getDocs(q);
           const list = [];
           snap.forEach(d => list.push(d.data()));

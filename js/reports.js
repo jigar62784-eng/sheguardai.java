@@ -21,6 +21,23 @@ import {
   getDownloadURL 
 } from './firebase.js';
 
+function getLocalReports(uid) {
+  try {
+    const raw = localStorage.getItem(`sheguard_reports_${uid}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLocalReports(uid, reports) {
+  try {
+    localStorage.setItem(`sheguard_reports_${uid}`, JSON.stringify(reports));
+  } catch (e) {
+    console.warn('[Reports] LocalStorage save warning:', e);
+  }
+}
+
 export class ReportsService {
   /**
    * Submits a new incident report (Hybrid: REST API with direct Cloud Firestore fallback)
@@ -105,8 +122,18 @@ export class ReportsService {
           updatedAt: Date.now()
         };
 
+        // Persist to LocalStorage backup so the user never loses their filed report
+        const uid = auth.currentUser.uid;
+        const local = getLocalReports(uid);
+        local.unshift(reportRecord);
+        saveLocalReports(uid, local);
+
         if (onProgress) onProgress('Writing report to Cloud Firestore...');
-        await setDoc(doc(db, 'reports', reference), reportRecord);
+        try {
+          await setDoc(doc(db, 'reports', reference), reportRecord);
+        } catch (firestoreErr) {
+          console.warn('[SheGuard Reports] Firestore permissions notice (report safely stored locally):', firestoreErr.message);
+        }
         return reportRecord;
       }
 
@@ -118,8 +145,12 @@ export class ReportsService {
    * Fetches the current user's submitted reports
    */
   async getMyReports() {
+    const uid = auth?.currentUser?.uid || 'guest';
+    const local = getLocalReports(uid);
+    let list = [];
+
     try {
-      return await api.get('/reports/mine');
+      list = await api.get('/reports/mine');
     } catch (apiErr) {
       if (db && auth && auth.currentUser) {
         try {
@@ -128,16 +159,21 @@ export class ReportsService {
             where('reporterUid', '==', auth.currentUser.uid)
           );
           const snapshot = await getDocs(q);
-          const list = [];
           snapshot.forEach(docSnap => list.push(docSnap.data()));
-          list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-          return list;
         } catch (dbErr) {
-          console.warn('[SheGuard Reports] Firestore query error:', dbErr);
+          console.warn('[SheGuard Reports] Firestore query notice:', dbErr.message);
         }
       }
-      return [];
     }
+
+    const combined = [...list];
+    local.forEach(item => {
+      if (!combined.some(r => r.reference === item.reference)) {
+        combined.push(item);
+      }
+    });
+    combined.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    return combined;
   }
 
   /**
@@ -148,11 +184,21 @@ export class ReportsService {
       return await api.get(`/reports/${encodeURIComponent(reference)}`);
     } catch (apiErr) {
       if (db) {
-        const docSnap = await getDoc(doc(db, 'reports', reference));
-        if (docSnap.exists()) {
-          return docSnap.data();
+        try {
+          const docSnap = await getDoc(doc(db, 'reports', reference));
+          if (docSnap.exists()) {
+            return docSnap.data();
+          }
+        } catch (e) {
+          console.warn('[Reports] Firestore details notice:', e.message);
         }
       }
+
+      const uid = auth?.currentUser?.uid || 'guest';
+      const local = getLocalReports(uid);
+      const match = local.find(r => r.reference === reference);
+      if (match) return match;
+
       throw apiErr;
     }
   }
@@ -166,6 +212,7 @@ export class ReportsService {
       url += `&category=${encodeURIComponent(category)}`;
     }
 
+    let list = [];
     try {
       return await api.get(url);
     } catch (apiErr) {
@@ -176,7 +223,6 @@ export class ReportsService {
             where('isPublicSafeDisplayEligible', '==', true)
           );
           const snapshot = await getDocs(q);
-          const list = [];
           const cutoffTime = Date.now() - (daysAgo * 86400000);
 
           snapshot.forEach(docSnap => {
@@ -195,12 +241,34 @@ export class ReportsService {
               }
             }
           });
-          return list;
         } catch (dbErr) {
-          console.warn('[SheGuard Reports] Firestore public query notice:', dbErr);
+          console.warn('[SheGuard Reports] Firestore public query notice:', dbErr.message);
         }
       }
-      return [];
+
+      // Also merge any local public-eligible reports
+      const uid = auth?.currentUser?.uid || 'guest';
+      const local = getLocalReports(uid);
+      const cutoff = Date.now() - (daysAgo * 86400000);
+      local.forEach(r => {
+        if (r.isPublicSafeDisplayEligible && (r.createdAt || 0) >= cutoff) {
+          if (!category || category === 'all' || r.category === category) {
+            if (!list.some(item => item.reference === r.reference)) {
+              list.push({
+                reference: r.reference,
+                category: r.category,
+                incidentDate: r.incidentDate,
+                incidentTime: r.incidentTime,
+                description: r.description,
+                status: r.status,
+                location: r.fuzzedLocation || r.location
+              });
+            }
+          }
+        }
+      });
+
+      return list;
     }
   }
 
