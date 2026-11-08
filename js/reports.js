@@ -38,6 +38,38 @@ function saveLocalReports(uid, reports) {
   }
 }
 
+function saveToGlobalReports(report) {
+  try {
+    const raw = localStorage.getItem('sheguard_global_reports');
+    const list = raw ? JSON.parse(raw) : [];
+    const idx = list.findIndex(r => r.reference === report.reference);
+    if (idx !== -1) {
+      list[idx] = { ...list[idx], ...report };
+    } else {
+      list.unshift(report);
+    }
+    localStorage.setItem('sheguard_global_reports', JSON.stringify(list));
+  } catch (e) {
+    console.warn('[Reports] Global save warning:', e);
+  }
+}
+
+function broadcastReportSync(type, report) {
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel('sheguard_sync');
+      channel.postMessage({ type, report, timestamp: Date.now() });
+      channel.close();
+    }
+  } catch (e) {}
+
+  if (typeof window !== 'undefined') {
+    try {
+      window.dispatchEvent(new CustomEvent('sheguard:report-sync', { detail: { type, report } }));
+    } catch (e) {}
+  }
+}
+
 export class ReportsService {
   /**
    * Submits a new incident report (Hybrid: REST API with direct Cloud Firestore fallback)
@@ -71,6 +103,15 @@ export class ReportsService {
           console.warn('[SheGuard Reports] Evidence upload deferred:', err);
         }
       }
+
+      // Ensure report is mirrored to local & global storage
+      const uid = (auth && auth.currentUser && auth.currentUser.uid) || 'reporter_user';
+      const local = getLocalReports(uid);
+      local.unshift(result);
+      saveLocalReports(uid, local);
+      saveToGlobalReports(result);
+      broadcastReportSync('REPORT_SUBMITTED', result);
+
       return result;
     } catch (apiErr) {
       console.warn('[SheGuard Reports] Backend API not reachable; falling back to Cloud Firestore direct save:', apiErr.message);
@@ -123,10 +164,11 @@ export class ReportsService {
         updatedAt: Date.now()
       };
 
-      // Persist to LocalStorage backup so the user never loses their filed report
+      // Persist to LocalStorage backup and global repository so the user never loses their filed report
       const local = getLocalReports(uid);
       local.unshift(reportRecord);
       saveLocalReports(uid, local);
+      saveToGlobalReports(reportRecord);
 
       if (db) {
         if (onProgress) onProgress('Writing report to Cloud Firestore...');
@@ -136,8 +178,148 @@ export class ReportsService {
           console.warn('[SheGuard Reports] Firestore permissions notice (report safely stored locally):', firestoreErr.message);
         }
       }
+
+      // Broadcast report creation across tabs and pages in 0ms
+      broadcastReportSync('REPORT_SUBMITTED', reportRecord);
+
       return reportRecord;
     }
+  }
+
+  /**
+   * Fetches all incident reports for safety administrators and police review
+   * Merges backend, Cloud Firestore, and all client persistent registries
+   */
+  async getAllReports() {
+    let list = [];
+
+    // 1. Attempt Spring Boot Backend REST API
+    try {
+      const apiReports = await api.get('/admin/reports');
+      if (Array.isArray(apiReports)) {
+        list = [...apiReports];
+      }
+    } catch (apiErr) {
+      // Backend offline, proceed to Cloud Firestore & localStorage
+    }
+
+    // 2. Query Cloud Firestore reports collection
+    if (db) {
+      try {
+        const snapshot = await getDocs(collection(db, 'reports'));
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          if (!list.some(r => r.reference === data.reference)) {
+            list.push(data);
+          }
+        });
+      } catch (dbErr) {
+        console.warn('[SheGuard Reports] Firestore getAllReports notice:', dbErr.message);
+      }
+    }
+
+    // 3. Scan & merge from Global and LocalStorage registries
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const rawGlobal = localStorage.getItem('sheguard_global_reports');
+        if (rawGlobal) {
+          const globalList = JSON.parse(rawGlobal);
+          if (Array.isArray(globalList)) {
+            globalList.forEach(r => {
+              if (r && r.reference && !list.some(item => item.reference === r.reference)) {
+                list.push(r);
+              }
+            });
+          }
+        }
+      } catch (e) {}
+
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('sheguard_reports_') || key === 'sheguard_police_cached_reports')) {
+            try {
+              const localList = JSON.parse(localStorage.getItem(key));
+              if (Array.isArray(localList)) {
+                localList.forEach(r => {
+                  if (r && r.reference && !list.some(item => item.reference === r.reference)) {
+                    list.push(r);
+                  }
+                });
+              }
+            } catch (e) {}
+          }
+        }
+      } catch (e) {}
+    }
+
+    list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    return list;
+  }
+
+  /**
+   * Updates verification status across all layers (API -> Firestore -> Local Registries)
+   */
+  async updateReportStatus(reference, newStatus, reviewNotes = '', adminEmail = '') {
+    const payload = {
+      status: newStatus.toUpperCase(),
+      reviewNotes: reviewNotes,
+      reviewedBy: adminEmail || (auth?.currentUser?.email || 'admin@sheguard.app'),
+      updatedAt: Date.now()
+    };
+
+    try {
+      await api.patch(`/admin/reports/${encodeURIComponent(reference)}/status`, {
+        status: newStatus,
+        reviewNotes: reviewNotes
+      });
+    } catch (apiErr) {
+      if (db) {
+        try {
+          await updateDoc(doc(db, 'reports', reference), payload);
+        } catch (dbErr) {
+          console.warn('[Reports] Firestore status update notice:', dbErr.message);
+        }
+      }
+    }
+
+    // Mirror to global and local storages
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const rawGlobal = localStorage.getItem('sheguard_global_reports');
+        if (rawGlobal) {
+          const globalList = JSON.parse(rawGlobal);
+          const item = globalList.find(r => r.reference === reference);
+          if (item) {
+            item.status = newStatus.toUpperCase();
+            item.reviewNotes = reviewNotes;
+            item.updatedAt = Date.now();
+            localStorage.setItem('sheguard_global_reports', JSON.stringify(globalList));
+          }
+        }
+      } catch (e) {}
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sheguard_reports_') || key === 'sheguard_police_cached_reports')) {
+          try {
+            const list = JSON.parse(localStorage.getItem(key));
+            if (Array.isArray(list)) {
+              const item = list.find(r => r.reference === reference);
+              if (item) {
+                item.status = newStatus.toUpperCase();
+                item.reviewNotes = reviewNotes;
+                item.updatedAt = Date.now();
+                localStorage.setItem(key, JSON.stringify(list));
+              }
+            }
+          } catch (e) {}
+        }
+      }
+    }
+
+    broadcastReportSync('REPORT_UPDATED', { reference, ...payload });
+    return payload;
   }
 
   /**
@@ -145,11 +327,13 @@ export class ReportsService {
    */
   async getMyReports() {
     const uid = auth?.currentUser?.uid || 'guest';
+    const email = (auth?.currentUser?.email || '').toLowerCase().trim();
     const local = getLocalReports(uid);
     let list = [];
 
     try {
       list = await api.get('/reports/mine');
+      if (!Array.isArray(list)) list = [];
     } catch (apiErr) {
       if (db && auth && auth.currentUser) {
         try {
@@ -167,10 +351,33 @@ export class ReportsService {
 
     const combined = [...list];
     local.forEach(item => {
-      if (!combined.some(r => r.reference === item.reference)) {
+      if (item && item.reference && !combined.some(r => r.reference === item.reference)) {
         combined.push(item);
       }
     });
+
+    // Also merge from global storage matching current reporter
+    try {
+      const rawGlobal = localStorage.getItem('sheguard_global_reports');
+      if (rawGlobal) {
+        const globalList = JSON.parse(rawGlobal);
+        if (Array.isArray(globalList)) {
+          globalList.forEach(r => {
+            if (r && r.reference) {
+              const matchesUid = r.reporterUid && r.reporterUid === uid;
+              const matchesEmail = email && r.reporterEmail && r.reporterEmail.toLowerCase() === email;
+              const isGuestFallback = uid === 'guest' || !r.reporterUid;
+              if (matchesUid || matchesEmail || isGuestFallback) {
+                if (!combined.some(item => item.reference === r.reference)) {
+                  combined.push(r);
+                }
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {}
+
     combined.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     return combined;
   }

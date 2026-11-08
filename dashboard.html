@@ -128,9 +128,12 @@
             </div>
             <p style="font-size: var(--font-size-sm); color: var(--text-secondary); margin: 0;">Your real-time security status, emergency help, and personal incident reports.</p>
           </div>
-          <div style="display: flex; gap: var(--space-3);">
-            <a href="report-incident.html" class="btn btn-primary">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+            <button type="button" id="btnOpenReportModal" class="btn btn-primary">
               <span>📝 File Incident Report</span>
+            </button>
+            <a href="report-incident.html" class="btn btn-secondary" style="font-size: 12px; display: inline-flex; align-items: center;">
+              <span>Full Form &rarr;</span>
             </a>
             <a href="emergency.html" class="btn btn-danger">
               <span>🚨 Emergency SOS</span>
@@ -272,6 +275,89 @@
           </div>
         </div>
       </section>
+    </div>
+
+    <!-- Quick File Incident Report Modal (Direct Dashboard Submission) -->
+    <div id="quickReportModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="modal-dialog" style="max-width: 580px;">
+        <div class="modal-header">
+          <h3 class="modal-title">📝 File Incident Report</h3>
+          <button class="modal-close" id="btnCloseQuickReportModal" aria-label="Close dialog">&times;</button>
+        </div>
+        <form id="quickReportForm">
+          <div class="modal-body">
+            <div id="quickReportAlert" class="alert alert-danger" style="display: none;"></div>
+
+            <div class="form-group">
+              <label for="quickCategory" class="form-label">Incident Category <span class="required">*</span></label>
+              <select id="quickCategory" class="form-select" required>
+                <option value="">Select Category...</option>
+                <option value="harassment">Harassment / Eve Teasing</option>
+                <option value="stalking">Stalking / Following</option>
+                <option value="physical_assault">Physical Assault</option>
+                <option value="threats">Threats / Intimidation</option>
+                <option value="cyber_harassment">Cyber Harassment / Blackmail</option>
+                <option value="unsafe_location">Unsafe Public Location (Poor lighting / Isolated)</option>
+                <option value="other">Other Safety Incident</option>
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label for="quickDate" class="form-label">Incident Date <span class="required">*</span></label>
+                <input type="date" id="quickDate" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label for="quickTime" class="form-label">Approximate Time</label>
+                <input type="time" id="quickTime" class="form-control">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label for="quickAddress" class="form-label" style="margin: 0;">Location / Landmark <span class="required">*</span></label>
+                <button type="button" id="btnQuickUseGps" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;">
+                  📍 Use Current GPS
+                </button>
+              </div>
+              <input type="text" id="quickAddress" class="form-control" placeholder="Street, area, or landmark" required>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+                <input type="number" id="quickLat" class="form-control" step="any" placeholder="Latitude" required style="font-size: 12px;">
+                <input type="number" id="quickLon" class="form-control" step="any" placeholder="Longitude" required style="font-size: 12px;">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="quickDescription" class="form-label">Incident Description <span class="required">*</span></label>
+              <textarea id="quickDescription" class="form-textarea" placeholder="Describe the incident with clear details..." required style="min-height: 80px;"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-check">
+                <input type="checkbox" id="quickConsent" required>
+                <span class="form-check-label" style="font-size: 12px;">
+                  I certify that the information provided is truthful to the best of my knowledge. <span class="required">*</span>
+                </span>
+              </label>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-check">
+                <input type="checkbox" id="quickPublicConsent" checked>
+                <span class="form-check-label" style="font-size: 12px; color: #94A3B8;">
+                  Allow privacy-protected alert point on public safety map (~500m fuzzed).
+                </span>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="btnCancelQuickReport">Cancel</button>
+            <button type="submit" id="btnSubmitQuickReport" class="btn btn-primary">
+              <span>Submit Report Instantly</span>
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </main>
 

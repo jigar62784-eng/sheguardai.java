@@ -6,21 +6,59 @@
 import { api } from './api.js';
 import { reportsService } from './reports.js';
 import { showToast, openModal, closeModal, escapeHtml } from './ui.js';
-import { db, auth, doc, updateDoc, setDoc, getDocs, collection } from './firebase.js';
+import { db, auth, doc, updateDoc, setDoc, getDocs, collection, onSnapshot } from './firebase.js';
 
 export class AdminController {
   constructor() {
     this.analytics = null;
     this.reports = [];
     this.activeReport = null;
+    this.hasSetupListeners = false;
   }
 
   async init() {
+    if (!this.hasSetupListeners) {
+      this.setupSyncListeners();
+      this.hasSetupListeners = true;
+    }
     await this.loadReportsQueue();
     await Promise.allSettled([
       this.loadAnalytics(),
       this.loadAuditLogs()
     ]);
+  }
+
+  setupSyncListeners() {
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('sheguard_sync');
+        channel.onmessage = async (event) => {
+          if (event.data?.type === 'REPORT_SUBMITTED' || event.data?.type === 'REPORT_UPDATED') {
+            await this.loadReportsQueue();
+          }
+        };
+      }
+    } catch (e) {}
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', async (e) => {
+        if (e.key && (e.key.startsWith('sheguard_reports_') || e.key === 'sheguard_global_reports')) {
+          await this.loadReportsQueue();
+        }
+      });
+
+      window.addEventListener('sheguard:report-sync', async () => {
+        await this.loadReportsQueue();
+      });
+    }
+
+    if (db) {
+      try {
+        onSnapshot(collection(db, 'reports'), () => {
+          this.loadReportsQueue();
+        }, () => {});
+      } catch (e) {}
+    }
   }
 
   /**
@@ -90,41 +128,11 @@ export class AdminController {
     if (!tableBody) return;
 
     try {
-      this.reports = await api.get('/admin/reports');
+      this.reports = await reportsService.getAllReports();
     } catch (err) {
-      // Fallback to Cloud Firestore
-      let list = [];
-      if (db) {
-        try {
-          const snapshot = await getDocs(collection(db, 'reports'));
-          snapshot.forEach(docSnap => list.push(docSnap.data()));
-        } catch (dbErr) {
-          console.warn('[Admin] Firestore reports query notice:', dbErr.message);
-        }
-      }
-
-      // Merge any local reports
-      if (typeof localStorage !== 'undefined') {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith('sheguard_reports_')) {
-            try {
-              const localList = JSON.parse(localStorage.getItem(key));
-              if (Array.isArray(localList)) {
-                localList.forEach(r => {
-                  if (!list.some(item => item.reference === r.reference)) {
-                    list.push(r);
-                  }
-                });
-              }
-            } catch (e) {}
-          }
-        }
-      }
-      this.reports = list;
+      console.warn('[Admin] Error retrieving reports queue:', err);
+      this.reports = [];
     }
-
-    this.reports.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
     // Instantly update analytics counters based on retrieved reports
     await this.loadAnalytics();
@@ -133,6 +141,34 @@ export class AdminController {
       tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94A3B8; padding: 24px;">No incident reports submitted in the system yet.</td></tr>`;
       return;
     }
+
+    tableBody.innerHTML = this.reports.map(r => {
+      const meta = reportsService.getStatusMeta(r.status);
+      const cat = reportsService.getCategoryLabel(r.category);
+      return `
+        <tr>
+          <td><strong style="font-family: monospace; color: var(--accent-cyan);">${escapeHtml(r.reference)}</strong></td>
+          <td>${escapeHtml(cat)}</td>
+          <td>${escapeHtml(r.incidentDate || 'N/A')}</td>
+          <td>${escapeHtml(r.location?.address || (r.location?.latitude ? `${r.location.latitude.toFixed(3)}, ${r.location.longitude.toFixed(3)}` : 'N/A'))}</td>
+          <td><span class="badge ${meta.badgeClass}">${escapeHtml(meta.label)}</span></td>
+          <td>${escapeHtml(r.reporterEmail || 'Confidential')}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm review-btn" data-ref="${escapeHtml(r.reference)}" style="font-size: 11px;">
+              Review
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Attach review button listeners
+    tableBody.querySelectorAll('.review-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.openReviewModal(btn.dataset.ref);
+      });
+    });
+  }
 
     tableBody.innerHTML = this.reports.map(r => {
       const meta = reportsService.getStatusMeta(r.status);
@@ -200,67 +236,31 @@ export class AdminController {
   async updateReportStatus(newStatus, reviewNotes = '') {
     if (!this.activeReport) return;
     const ref = this.activeReport.reference;
+    const adminEmail = (auth && auth.currentUser && auth.currentUser.email) || 'admin@sheguard.app';
 
-    try {
-      await api.patch(`/admin/reports/${encodeURIComponent(ref)}/status`, {
-        status: newStatus,
-        reviewNotes: reviewNotes
-      });
-    } catch (err) {
-      if (db) {
-        try {
-          await updateDoc(doc(db, 'reports', ref), {
-            status: newStatus,
-            reviewNotes: reviewNotes,
-            updatedAt: Date.now()
-          });
-        } catch (dbErr) {
-          console.warn('[Admin] Firestore update notice:', dbErr.message);
-        }
-      }
+    await reportsService.updateReportStatus(ref, newStatus, reviewNotes, adminEmail);
 
-      // Update in local memory & storage
-      const report = this.reports.find(r => r.reference === ref);
-      if (report) {
-        report.status = newStatus;
-        report.reviewNotes = reviewNotes;
-        report.updatedAt = Date.now();
-      }
+    // Update in local memory
+    const report = this.reports.find(r => r.reference === ref);
+    if (report) {
+      report.status = newStatus;
+      report.reviewNotes = reviewNotes;
+      report.updatedAt = Date.now();
+    }
 
-      if (typeof localStorage !== 'undefined') {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith('sheguard_reports_')) {
-            try {
-              const localList = JSON.parse(localStorage.getItem(key));
-              if (Array.isArray(localList)) {
-                const item = localList.find(x => x.reference === ref);
-                if (item) {
-                  item.status = newStatus;
-                  item.reviewNotes = reviewNotes;
-                  item.updatedAt = Date.now();
-                  localStorage.setItem(key, JSON.stringify(localList));
-                }
-              }
-            } catch (e) {}
-          }
-        }
-      }
-
-      // Add audit log entry
-      const auditEntry = {
-        id: 'aud_' + Date.now(),
-        adminEmail: (auth && auth.currentUser && auth.currentUser.email) || 'admin',
-        action: `UPDATED_STATUS_TO_${newStatus}`,
-        targetReference: ref,
-        notes: reviewNotes,
-        timestamp: Date.now()
-      };
-      if (db) {
-        try {
-          await setDoc(doc(db, 'audit_logs', auditEntry.id), auditEntry);
-        } catch (e) {}
-      }
+    // Add audit log entry
+    const auditEntry = {
+      id: 'aud_' + Date.now(),
+      adminEmail: adminEmail,
+      action: `UPDATED_STATUS_TO_${newStatus}`,
+      targetReference: ref,
+      notes: reviewNotes,
+      timestamp: Date.now()
+    };
+    if (db) {
+      try {
+        await setDoc(doc(db, 'audit_logs', auditEntry.id), auditEntry);
+      } catch (e) {}
     }
 
     showToast(`Report ${ref} status updated to ${newStatus}.`, 'success');

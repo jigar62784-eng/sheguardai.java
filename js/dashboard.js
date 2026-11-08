@@ -10,13 +10,14 @@ import { contactsService } from './contacts.js';
 import { familyService } from './family.js';
 import { emergencyServices } from './emergency-services.js';
 import { locationService } from './location.js';
-import { formatDateTime, renderEmptyState, escapeHtml } from './ui.js';
+import { formatDateTime, renderEmptyState, escapeHtml, openModal, closeModal, showToast } from './ui.js';
 
 export class DashboardController {
   constructor() {
     this.currentPosition = null;
     this.nearbyServicesData = null;
     this.activeServiceTab = 'POLICE'; // 'POLICE' or 'HOSPITAL'
+    this.hasSetupListeners = false;
   }
 
   async init() {
@@ -29,7 +30,14 @@ export class DashboardController {
     // 2. Setup Emergency Services Switcher Tabs
     this.setupEmergencyTrackerControls();
 
-    // 3. Load Metrics, Data & Emergency Services in parallel
+    // 3. Setup Quick Report Modal & Real-time Synchronization
+    this.setupQuickReportModal();
+    if (!this.hasSetupListeners) {
+      this.setupSyncListeners();
+      this.hasSetupListeners = true;
+    }
+
+    // 4. Load Metrics, Data & Emergency Services in parallel
     await Promise.allSettled([
       this.loadReportMetrics(),
       this.loadContactsCount(),
@@ -37,6 +45,155 @@ export class DashboardController {
       this.loadRecentReports(),
       this.trackNearestEmergencyServices()
     ]);
+  }
+
+  setupSyncListeners() {
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('sheguard_sync');
+        channel.onmessage = async (event) => {
+          if (event.data?.type === 'REPORT_SUBMITTED' || event.data?.type === 'REPORT_UPDATED') {
+            await Promise.allSettled([
+              this.loadReportMetrics(),
+              this.loadRecentReports()
+            ]);
+          }
+        };
+      }
+    } catch (e) {}
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', async (e) => {
+        if (e.key && (e.key.startsWith('sheguard_reports_') || e.key === 'sheguard_global_reports')) {
+          await Promise.allSettled([
+            this.loadReportMetrics(),
+            this.loadRecentReports()
+          ]);
+        }
+      });
+
+      window.addEventListener('sheguard:report-sync', async () => {
+        await Promise.allSettled([
+          this.loadReportMetrics(),
+          this.loadRecentReports()
+        ]);
+      });
+    }
+  }
+
+  setupQuickReportModal() {
+    const btnOpen = document.getElementById('btnOpenReportModal');
+    const btnClose = document.getElementById('btnCloseQuickReportModal');
+    const btnCancel = document.getElementById('btnCancelQuickReport');
+    const form = document.getElementById('quickReportForm');
+    const dateInput = document.getElementById('quickDate');
+    const timeInput = document.getElementById('quickTime');
+    const btnGps = document.getElementById('btnQuickUseGps');
+    const latInput = document.getElementById('quickLat');
+    const lonInput = document.getElementById('quickLon');
+    const addrInput = document.getElementById('quickAddress');
+    const alertBox = document.getElementById('quickReportAlert');
+
+    if (dateInput && !dateInput.value) {
+      dateInput.value = new Date().toISOString().split('T')[0];
+    }
+    if (timeInput && !timeInput.value) {
+      const now = new Date();
+      timeInput.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    }
+
+    if (btnOpen) {
+      btnOpen.addEventListener('click', () => {
+        if (alertBox) alertBox.style.display = 'none';
+        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+        if (this.currentPosition && latInput && lonInput && (!latInput.value || !lonInput.value)) {
+          latInput.value = this.currentPosition.latitude.toFixed(5);
+          lonInput.value = this.currentPosition.longitude.toFixed(5);
+          if (addrInput && !addrInput.value) addrInput.value = 'Current Location';
+        }
+        openModal('quickReportModal');
+      });
+    }
+
+    if (btnClose) btnClose.addEventListener('click', () => closeModal('quickReportModal'));
+    if (btnCancel) btnCancel.addEventListener('click', () => closeModal('quickReportModal'));
+
+    if (btnGps) {
+      btnGps.addEventListener('click', async () => {
+        try {
+          const pos = await locationService.getCurrentPosition();
+          if (latInput) latInput.value = pos.latitude.toFixed(5);
+          if (lonInput) lonInput.value = pos.longitude.toFixed(5);
+          if (addrInput && !addrInput.value) addrInput.value = 'Verified GPS Location';
+          showToast('Updated coordinates to current GPS.', 'info');
+        } catch (err) {
+          showToast('GPS unavailable: ' + err.message, 'warning');
+        }
+      });
+    }
+
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const category = document.getElementById('quickCategory')?.value;
+        const incidentDate = dateInput?.value;
+        const incidentTime = timeInput?.value || '';
+        const address = addrInput?.value.trim() || 'Unspecified Location';
+        const latitude = parseFloat(latInput?.value);
+        const longitude = parseFloat(lonInput?.value);
+        const description = document.getElementById('quickDescription')?.value.trim();
+        const consentGiven = document.getElementById('quickConsent')?.checked;
+        const isPublicSafeDisplayEligible = document.getElementById('quickPublicConsent')?.checked;
+        const submitBtn = document.getElementById('btnSubmitQuickReport');
+
+        if (!category || !incidentDate || isNaN(latitude) || isNaN(longitude) || !description) {
+          if (alertBox) {
+            alertBox.textContent = 'Please fill out all required fields and coordinate values.';
+            alertBox.style.display = 'block';
+          }
+          return;
+        }
+
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Filing Report...';
+        }
+
+        try {
+          const report = await reportsService.submitReport({
+            category,
+            incidentDate,
+            incidentTime,
+            address,
+            latitude,
+            longitude,
+            description,
+            consentGiven,
+            isPublicSafeDisplayEligible
+          });
+
+          showToast(`Report ${report.reference} filed successfully!`, 'success');
+          closeModal('quickReportModal');
+          form.reset();
+
+          // Refresh recent reports and metrics instantly
+          await Promise.allSettled([
+            this.loadReportMetrics(),
+            this.loadRecentReports()
+          ]);
+        } catch (err) {
+          if (alertBox) {
+            alertBox.textContent = 'Failed to submit report: ' + err.message;
+            alertBox.style.display = 'block';
+          }
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Report Instantly';
+          }
+        }
+      });
+    }
   }
 
   renderRoleAndGreeting(user) {

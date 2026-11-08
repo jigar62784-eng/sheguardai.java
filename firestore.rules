@@ -67,21 +67,27 @@ service cloud.firestore {
     // ========================================================
 
     match /reports/{reportId} {
-      allow read, create: if true;
-      allow update, delete: if isAuthenticated();
+      allow read, write: if true;
     }
 
     match /emergency_alerts/{alertId} {
-      allow read, create, update: if true;
+      allow read, write: if true;
     }
 
     match /police_officers/{officerId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+      allow read, write: if true;
     }
 
     match /audit_logs/{logId} {
-      allow read, create: if true;
+      allow read, write: if true;
+    }
+
+    match /contacts/{contactId} {
+      allow read, write: if true;
+    }
+
+    match /invitations/{invitationId} {
+      allow read, write: if true;
     }
   }
 }

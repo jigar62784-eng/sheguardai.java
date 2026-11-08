@@ -46,6 +46,7 @@ assert(userDashboardHtml.includes('id="metricTotalReports"') &&
 assert(userDashboardHtml.includes('id="metricContactsCount"'), 'Trusted contacts counter present');
 assert(userDashboardHtml.includes('id="metricFamilyStatus"'), 'Family circle connectivity indicator present');
 assert(userDashboardHtml.includes('id="dashboardRecentReports"'), 'Recent reports container table present');
+assert(userDashboardHtml.includes('id="btnOpenReportModal"') && userDashboardHtml.includes('id="quickReportModal"'), 'Direct quick incident reporting modal and button present on user dashboard');
 assert(userDashboardHtml.includes('class="dashboard-sidebar"'), 'Responsive desktop/tablet sidebar present');
 assert(userDashboardHtml.includes('class="mobile-nav-toggle"'), 'Mobile navigation toggle present');
 
@@ -89,11 +90,15 @@ assert(layoutCss.includes('display: grid') || layoutCss.includes('display: flex'
 console.log('\n5. JavaScript ES Modules & Cloud Resilience:');
 const adminJs = checkFile('js/admin.js');
 const dashboardJs = checkFile('js/dashboard.js');
+const reportsJs = checkFile('js/reports.js');
 const authJs = checkFile('js/auth.js');
 
 assert(adminJs.includes('export class AdminController'), 'AdminController exported as standard ES Module');
-assert(adminJs.includes('collection(db, \'reports\')'), 'AdminController has Cloud Firestore direct fallback');
+assert(adminJs.includes('reportsService.getAllReports()'), 'AdminController retrieves unified reports via reportsService.getAllReports()');
 assert(dashboardJs.includes('export class DashboardController'), 'DashboardController exported as standard ES Module');
+assert(reportsJs.includes('getAllReports()'), 'ReportsService provides centralized getAllReports() across API, Firestore and Local storage');
+assert(reportsJs.includes('saveToGlobalReports('), 'ReportsService synchronizes new incident reports to global client registry');
+assert(reportsJs.includes('BroadcastChannel'), 'ReportsService broadcasts real-time report synchronization across browser tabs in 0ms');
 assert(authJs.includes('isAdmin()'), 'Role-based access check (isAdmin) implemented for admin protection');
 
 console.log(`\n===========================================`);
