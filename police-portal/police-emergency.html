@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency SOS Tactical Monitor — SheGuard Police Portal</title>
+  <link rel="stylesheet" href="css/police.css">
+  <link rel="stylesheet" href="css/police-responsive.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+</head>
+<body class="police-theme">
+
+  <div class="police-app-shell">
+    
+    <!-- Command Sidebar -->
+    <aside class="police-sidebar">
+      <a href="police-dashboard.html" class="police-brand">
+        <div class="police-shield-icon">🛡️</div>
+        <div class="police-brand-title">
+          <div class="police-brand-name">
+            <span>SHEGUARD</span>
+            <span class="police-badge-pill">POLICE</span>
+          </div>
+          <span class="police-brand-sub">Law Enforcement Command</span>
+        </div>
+      </a>
+
+      <nav class="police-nav">
+        <div class="police-nav-section-label">Operations</div>
+        <a href="police-dashboard.html" class="police-nav-link" data-page="dashboard">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📊</span>
+            <span>Command Overview</span>
+          </div>
+        </a>
+        <a href="police-reports.html" class="police-nav-link" data-page="reports">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📁</span>
+            <span>Incident Registry</span>
+          </div>
+        </a>
+        <a href="police-investigation.html" class="police-nav-link" data-page="investigation">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🔍</span>
+            <span>Case Investigation</span>
+          </div>
+        </a>
+        <a href="police-incident-map.html" class="police-nav-link" data-page="map">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🗺️</span>
+            <span>Incident GIS Map</span>
+          </div>
+        </a>
+        <a href="police-emergency.html" class="police-nav-link active" data-page="emergency">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🚨</span>
+            <span>Emergency SOS Monitor</span>
+          </div>
+          <span class="police-nav-counter alert-active" id="navEmergencyCounter">0</span>
+        </a>
+
+        <div class="police-nav-section-label">Intelligence & Admin</div>
+        <a href="police-analytics.html" class="police-nav-link" data-page="analytics">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📈</span>
+            <span>Crime Analytics</span>
+          </div>
+        </a>
+        <a href="police-officers.html" class="police-nav-link" data-page="officers">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">👮</span>
+            <span>Authorized Officers</span>
+          </div>
+        </a>
+        <a href="police-audit-logs.html" class="police-nav-link" data-page="audit">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📜</span>
+            <span>Audit Trail</span>
+          </div>
+        </a>
+        <a href="police-settings.html" class="police-nav-link" data-page="settings">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">⚙️</span>
+            <span>Station Settings</span>
+          </div>
+        </a>
+      </nav>
+
+      <div class="police-sidebar-footer">
+        <div class="police-station-badge">
+          <span class="police-status-indicator"></span>
+          <div>
+            <div style="font-weight: 600; color: #fff;">State Police Network</div>
+            <div style="font-size: 10px; color: var(--police-text-muted);">Cloud Firestore Active</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="police-main-wrapper">
+      
+      <!-- Top Tactical Bar -->
+      <header class="police-topbar">
+        <div class="police-topbar-left">
+          <button id="policeMobileToggle" class="police-mobile-toggle" aria-label="Toggle menu">☰</button>
+          <div class="police-page-title-badge">
+            <span style="color: #F87171;">TACTICAL SOS DISPATCH</span>
+            <span class="police-badge badge-priority-critical">RADAR ACTIVE</span>
+          </div>
+          <div id="topbarMilitaryClock" class="police-clock-display">
+            <span>🕒 --:--:-- LOCAL</span>
+          </div>
+        </div>
+
+        <div class="police-topbar-right">
+          <button id="topbarDutyToggle" class="police-duty-btn">
+            <span class="police-status-indicator"></span>
+            <span>ON DUTY</span>
+          </button>
+
+          <div class="police-officer-pill">
+            <div class="police-officer-avatar" id="topbarOfficerInitials">PO</div>
+            <div class="police-officer-info">
+              <span class="police-officer-name" id="topbarOfficerName">Officer</span>
+              <span class="police-officer-rank" id="topbarOfficerRank">POLICE</span>
+            </div>
+          </div>
+
+          <button id="topbarLogoutBtn" class="police-btn police-btn-secondary police-btn-sm">
+            <span>Logout</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Tactical SOS Emergency Ticker -->
+      <div id="policeEmergencyTicker" class="police-emergency-ticker"></div>
+
+      <!-- Main Content -->
+      <main class="police-content-area">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 20px; font-weight: 800; color: #fff;">Emergency SOS Distress Monitoring Center</h1>
+            <p style="font-size: 12.5px; color: var(--police-text-secondary);">
+              Live distress signals received directly from women activating the emergency SOS beacon in SheGuard.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button id="toggleAlertSoundBtn" class="police-btn police-btn-secondary">
+              <span>🔊 Siren: ON</span>
+            </button>
+            <button id="manualSosRefreshBtn" class="police-btn police-btn-primary">
+              <span>🔄 Poll Distress Queue</span>
+            </button>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 1.4fr; gap: 1.5rem;">
+          
+          <!-- Distress Calls Queue -->
+          <div>
+            <div class="police-panel">
+              <div class="police-panel-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 16px;">🚨</span>
+                  <h2 class="police-panel-title">Active Emergency Signals</h2>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                  <button class="police-btn police-btn-secondary police-btn-sm sos-filter-btn active" data-filter="ACTIVE">Active & Dispatched</button>
+                  <button class="police-btn police-btn-secondary police-btn-sm sos-filter-btn" data-filter="RESOLVED">Resolved Archive</button>
+                </div>
+              </div>
+              <div class="police-panel-body" style="padding-bottom: 0.5rem;">
+                <div id="activeSosQueueContainer">
+                  <div style="text-align: center; padding: 2rem; color: var(--police-text-muted);">
+                    Polling active distress signals from database...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tactical SOS Radar Map -->
+          <div>
+            <div class="police-panel">
+              <div class="police-panel-header">
+                <h3 class="police-panel-title" style="font-size: 13.5px;">Tactical Scene Map</h3>
+                <span id="sosActiveCounterBadge" class="police-badge badge-priority-critical">0 Live Signals</span>
+              </div>
+              <div class="police-panel-body" style="padding: 0;">
+                <div id="emergencyTacticalMap" style="height: 480px; width: 100%; border-radius: 0 0 var(--radius-md) var(--radius-md); background: #0B1120;"></div>
+              </div>
+            </div>
+
+            <!-- Tactical Protocol Checklist -->
+            <div class="police-panel">
+              <div class="police-panel-header">
+                <h4 class="police-panel-title" style="font-size: 13px;">SOP: Women SOS Emergency Response</h4>
+              </div>
+              <div class="police-panel-body" style="font-size: 12.5px; color: var(--police-text-secondary); line-height: 1.6;">
+                <div style="margin-bottom: 6px;">1. <strong>Claim Alert:</strong> Immediately click "Acknowledge" to log officer identity.</div>
+                <div style="margin-bottom: 6px;">2. <strong>Dispatch:</strong> Alert nearest PCR van / patrol motorcycle unit with coordinates.</div>
+                <div style="margin-bottom: 6px;">3. <strong>Contact Verification:</strong> Verify that citizen's trusted emergency contacts received automatic SMS/Email.</div>
+                <div>4. <strong>Secure & Close:</strong> Once scene is secured, file on-scene debrief notes and close call.</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script type="module">
+    import { requirePoliceAuth, setupPoliceAppShell } from './js/police-guards.js';
+    import { PoliceEmergencyController } from './js/police-emergency.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const officer = requirePoliceAuth();
+      if (!officer) return;
+
+      document.getElementById('topbarOfficerName').textContent = officer.name;
+      document.getElementById('topbarOfficerRank').textContent = `${officer.rank} (${officer.badgeNumber})`;
+      const initials = officer.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+      document.getElementById('topbarOfficerInitials').textContent = initials;
+
+      setupPoliceAppShell('emergency');
+
+      const ctrl = new PoliceEmergencyController();
+      await ctrl.init();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Incident Reports Registry — SheGuard Police Portal</title>
+  <link rel="stylesheet" href="css/police.css">
+  <link rel="stylesheet" href="css/police-responsive.css">
+</head>
+<body class="police-theme">
+
+  <div class="police-app-shell">
+    
+    <!-- Command Sidebar -->
+    <aside class="police-sidebar">
+      <a href="police-dashboard.html" class="police-brand">
+        <div class="police-shield-icon">🛡️</div>
+        <div class="police-brand-title">
+          <div class="police-brand-name">
+            <span>SHEGUARD</span>
+            <span class="police-badge-pill">POLICE</span>
+          </div>
+          <span class="police-brand-sub">Law Enforcement Command</span>
+        </div>
+      </a>
+
+      <nav class="police-nav">
+        <div class="police-nav-section-label">Operations</div>
+        <a href="police-dashboard.html" class="police-nav-link" data-page="dashboard">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📊</span>
+            <span>Command Overview</span>
+          </div>
+        </a>
+        <a href="police-reports.html" class="police-nav-link active" data-page="reports">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📁</span>
+            <span>Incident Registry</span>
+          </div>
+        </a>
+        <a href="police-investigation.html" class="police-nav-link" data-page="investigation">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🔍</span>
+            <span>Case Investigation</span>
+          </div>
+        </a>
+        <a href="police-incident-map.html" class="police-nav-link" data-page="map">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🗺️</span>
+            <span>Incident GIS Map</span>
+          </div>
+        </a>
+        <a href="police-emergency.html" class="police-nav-link" data-page="emergency">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🚨</span>
+            <span>Emergency SOS Monitor</span>
+          </div>
+          <span class="police-nav-counter alert-active" id="navEmergencyCounter">0</span>
+        </a>
+
+        <div class="police-nav-section-label">Intelligence & Admin</div>
+        <a href="police-analytics.html" class="police-nav-link" data-page="analytics">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📈</span>
+            <span>Crime Analytics</span>
+          </div>
+        </a>
+        <a href="police-officers.html" class="police-nav-link" data-page="officers">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">👮</span>
+            <span>Authorized Officers</span>
+          </div>
+        </a>
+        <a href="police-audit-logs.html" class="police-nav-link" data-page="audit">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📜</span>
+            <span>Audit Trail</span>
+          </div>
+        </a>
+        <a href="police-settings.html" class="police-nav-link" data-page="settings">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">⚙️</span>
+            <span>Station Settings</span>
+          </div>
+        </a>
+      </nav>
+
+      <div class="police-sidebar-footer">
+        <div class="police-station-badge">
+          <span class="police-status-indicator"></span>
+          <div>
+            <div style="font-weight: 600; color: #fff;">State Police Network</div>
+            <div style="font-size: 10px; color: var(--police-text-muted);">Cloud Firestore Active</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="police-main-wrapper">
+      
+      <!-- Top Tactical Bar -->
+      <header class="police-topbar">
+        <div class="police-topbar-left">
+          <button id="policeMobileToggle" class="police-mobile-toggle" aria-label="Toggle menu">☰</button>
+          <div class="police-page-title-badge">
+            <span>INCIDENT REGISTRY</span>
+            <span class="police-badge badge-under-review">CASE ARCHIVE</span>
+          </div>
+          <div id="topbarMilitaryClock" class="police-clock-display">
+            <span>🕒 --:--:-- LOCAL</span>
+          </div>
+        </div>
+
+        <div class="police-topbar-right">
+          <button id="topbarDutyToggle" class="police-duty-btn">
+            <span class="police-status-indicator"></span>
+            <span>ON DUTY</span>
+          </button>
+
+          <div class="police-officer-pill">
+            <div class="police-officer-avatar" id="topbarOfficerInitials">PO</div>
+            <div class="police-officer-info">
+              <span class="police-officer-name" id="topbarOfficerName">Officer</span>
+              <span class="police-officer-rank" id="topbarOfficerRank">POLICE</span>
+            </div>
+          </div>
+
+          <button id="topbarLogoutBtn" class="police-btn police-btn-secondary police-btn-sm">
+            <span>Logout</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Tactical SOS Emergency Ticker -->
+      <div id="policeEmergencyTicker" class="police-emergency-ticker"></div>
+
+      <!-- Main Content -->
+      <main class="police-content-area">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 20px; font-weight: 800; color: #fff;">Incident Reports & Case Management</h1>
+            <p style="font-size: 12.5px; color: var(--police-text-secondary);">
+              Inspect, assign, verify, and resolve confidential women safety incident records.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button id="exportCsvBtn" class="police-btn police-btn-secondary">
+              <span>📥 Export CSV</span>
+            </button>
+            <button id="exportJsonBtn" class="police-btn police-btn-secondary">
+              <span>📄 Export JSON</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Suite -->
+        <div class="police-panel" style="margin-bottom: 1.25rem;">
+          <div class="police-panel-body" style="padding: 1rem;">
+            <div class="police-filter-bar" style="margin-bottom: 0;">
+              <div class="police-search-box">
+                <span class="police-search-icon">🔍</span>
+                <input type="text" id="reportSearchInput" class="police-input" placeholder="Search by Case Ref, Description, Address, or Officer...">
+              </div>
+
+              <div style="min-width: 170px;">
+                <select id="reportStatusFilter" class="police-select">
+                  <option value="ALL">All Statuses</option>
+                  <option value="SUBMITTED">SUBMITTED</option>
+                  <option value="PENDING_VERIFICATION">PENDING_VERIFICATION</option>
+                  <option value="UNDER_REVIEW">UNDER_REVIEW</option>
+                  <option value="ASSIGNED">ASSIGNED</option>
+                  <option value="UNDER_INVESTIGATION">UNDER_INVESTIGATION</option>
+                  <option value="VERIFIED">VERIFIED</option>
+                  <option value="RESOLVED">RESOLVED</option>
+                  <option value="REJECTED">REJECTED</option>
+                </select>
+              </div>
+
+              <div style="min-width: 180px;">
+                <select id="reportCategoryFilter" class="police-select">
+                  <option value="ALL">All Categories</option>
+                  <option value="harassment">Harassment / Eve Teasing</option>
+                  <option value="stalking">Stalking / Following</option>
+                  <option value="physical_assault">Physical Assault</option>
+                  <option value="threats">Threats / Intimidation</option>
+                  <option value="cyber_harassment">Cyber Harassment</option>
+                  <option value="unsafe_location">Unsafe Location</option>
+                  <option value="other">Other Incident</option>
+                </select>
+              </div>
+
+              <div style="min-width: 140px;">
+                <select id="reportPriorityFilter" class="police-select">
+                  <option value="ALL">All Priorities</option>
+                  <option value="CRITICAL">Critical</option>
+                  <option value="HIGH">High</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LOW">Low</option>
+                </select>
+              </div>
+
+              <div style="min-width: 150px;">
+                <select id="reportSortSelect" class="police-select">
+                  <option value="DATE_DESC">Newest First</option>
+                  <option value="DATE_ASC">Oldest First</option>
+                  <option value="PRIORITY">Priority First</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Incidents Table -->
+        <div class="police-panel">
+          <div class="police-panel-header">
+            <h2 class="police-panel-title">Active Law Enforcement Case Docket</h2>
+            <span id="reportsMatchingCount" class="police-panel-subtitle">Loading records...</span>
+          </div>
+
+          <div class="police-table-responsive">
+            <table class="police-table">
+              <thead>
+                <tr>
+                  <th>Reference</th>
+                  <th>Priority</th>
+                  <th>Category</th>
+                  <th>Location</th>
+                  <th>Date & Time</th>
+                  <th>Status</th>
+                  <th>Evidence</th>
+                  <th>Assigned Officer</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="reportsRegistryTbody">
+                <tr>
+                  <td colspan="9" style="text-align: center; padding: 2.5rem; color: var(--police-text-muted);">
+                    Synchronizing case records from Firestore database...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="police-panel-header" style="justify-content: space-between; background: rgba(11, 17, 32, 0.4);">
+            <span id="reportsPageIndicator" style="font-size: 11.5px; color: var(--police-text-muted);">Page 1 of 1</span>
+            <div style="display: flex; gap: 6px;">
+              <button id="reportsPrevBtn" class="police-btn police-btn-secondary police-btn-sm" disabled>&larr; Prev</button>
+              <button id="reportsNextBtn" class="police-btn police-btn-secondary police-btn-sm" disabled>Next &rarr;</button>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- Assign Officer Modal -->
+  <div id="assignOfficerModal" class="police-modal-overlay">
+    <div class="police-modal" style="max-width: 480px;">
+      <div class="police-modal-header">
+        <h3 class="police-modal-title">Assign Investigating Officer</h3>
+        <button id="closeAssignModalBtn" class="police-modal-close">&times;</button>
+      </div>
+      <div class="police-modal-body">
+        <div style="margin-bottom: 1rem;">
+          <span style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted);">Case Reference:</span>
+          <div id="assignModalRef" style="font-size: 14px; font-weight: 700; color: var(--police-cyan); font-family: var(--font-mono);">SG-XXXX</div>
+        </div>
+
+        <div class="police-form-group">
+          <label class="police-form-label" for="assignOfficerSelect">Select Investigating Officer *</label>
+          <select id="assignOfficerSelect" class="police-select"></select>
+        </div>
+
+        <div class="police-form-group">
+          <label class="police-form-label" for="assignPrioritySelect">Investigation Priority Escalation *</label>
+          <select id="assignPrioritySelect" class="police-select">
+            <option value="CRITICAL">CRITICAL (Immediate field response)</option>
+            <option value="HIGH" selected>HIGH (Investigate within 6 hours)</option>
+            <option value="MEDIUM">MEDIUM (Standard 24-hour review)</option>
+            <option value="LOW">LOW (Informational log / monitoring)</option>
+          </select>
+        </div>
+      </div>
+      <div class="police-modal-footer">
+        <button id="confirmAssignBtn" class="police-btn police-btn-primary">Assign Officer & Notify</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requirePoliceAuth, setupPoliceAppShell } from './js/police-guards.js';
+    import { PoliceReportsController } from './js/police-reports.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const officer = requirePoliceAuth();
+      if (!officer) return;
+
+      document.getElementById('topbarOfficerName').textContent = officer.name;
+      document.getElementById('topbarOfficerRank').textContent = `${officer.rank} (${officer.badgeNumber})`;
+      const initials = officer.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+      document.getElementById('topbarOfficerInitials').textContent = initials;
+
+      setupPoliceAppShell('reports');
+
+      const ctrl = new PoliceReportsController();
+      await ctrl.init();
+    });
+  </script>
+</body>
+</html>

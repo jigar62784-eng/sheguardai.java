@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Police Audit Trail & Legal Log — SheGuard Police Portal</title>
+  <link rel="stylesheet" href="css/police.css">
+  <link rel="stylesheet" href="css/police-responsive.css">
+</head>
+<body class="police-theme">
+
+  <div class="police-app-shell">
+    
+    <!-- Command Sidebar -->
+    <aside class="police-sidebar">
+      <a href="police-dashboard.html" class="police-brand">
+        <div class="police-shield-icon">🛡️</div>
+        <div class="police-brand-title">
+          <div class="police-brand-name">
+            <span>SHEGUARD</span>
+            <span class="police-badge-pill">POLICE</span>
+          </div>
+          <span class="police-brand-sub">Law Enforcement Command</span>
+        </div>
+      </a>
+
+      <nav class="police-nav">
+        <div class="police-nav-section-label">Operations</div>
+        <a href="police-dashboard.html" class="police-nav-link" data-page="dashboard">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📊</span>
+            <span>Command Overview</span>
+          </div>
+        </a>
+        <a href="police-reports.html" class="police-nav-link" data-page="reports">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📁</span>
+            <span>Incident Registry</span>
+          </div>
+        </a>
+        <a href="police-investigation.html" class="police-nav-link" data-page="investigation">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🔍</span>
+            <span>Case Investigation</span>
+          </div>
+        </a>
+        <a href="police-incident-map.html" class="police-nav-link" data-page="map">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🗺️</span>
+            <span>Incident GIS Map</span>
+          </div>
+        </a>
+        <a href="police-emergency.html" class="police-nav-link" data-page="emergency">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🚨</span>
+            <span>Emergency SOS Monitor</span>
+          </div>
+          <span class="police-nav-counter alert-active" id="navEmergencyCounter">0</span>
+        </a>
+
+        <div class="police-nav-section-label">Intelligence & Admin</div>
+        <a href="police-analytics.html" class="police-nav-link" data-page="analytics">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📈</span>
+            <span>Crime Analytics</span>
+          </div>
+        </a>
+        <a href="police-officers.html" class="police-nav-link" data-page="officers">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">👮</span>
+            <span>Authorized Officers</span>
+          </div>
+        </a>
+        <a href="police-audit-logs.html" class="police-nav-link active" data-page="audit">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📜</span>
+            <span>Audit Trail</span>
+          </div>
+        </a>
+        <a href="police-settings.html" class="police-nav-link" data-page="settings">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">⚙️</span>
+            <span>Station Settings</span>
+          </div>
+        </a>
+      </nav>
+
+      <div class="police-sidebar-footer">
+        <div class="police-station-badge">
+          <span class="police-status-indicator"></span>
+          <div>
+            <div style="font-weight: 600; color: #fff;">State Police Network</div>
+            <div style="font-size: 10px; color: var(--police-text-muted);">Cloud Firestore Active</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="police-main-wrapper">
+      
+      <!-- Top Tactical Bar -->
+      <header class="police-topbar">
+        <div class="police-topbar-left">
+          <button id="policeMobileToggle" class="police-mobile-toggle" aria-label="Toggle menu">☰</button>
+          <div class="police-page-title-badge">
+            <span>IMMUTABLE AUDIT TRAIL</span>
+            <span class="police-badge badge-verified">CRYPTOGRAPHIC LOG</span>
+          </div>
+          <div id="topbarMilitaryClock" class="police-clock-display">
+            <span>🕒 --:--:-- LOCAL</span>
+          </div>
+        </div>
+
+        <div class="police-topbar-right">
+          <button id="topbarDutyToggle" class="police-duty-btn">
+            <span class="police-status-indicator"></span>
+            <span>ON DUTY</span>
+          </button>
+
+          <div class="police-officer-pill">
+            <div class="police-officer-avatar" id="topbarOfficerInitials">PO</div>
+            <div class="police-officer-info">
+              <span class="police-officer-name" id="topbarOfficerName">Officer</span>
+              <span class="police-officer-rank" id="topbarOfficerRank">POLICE</span>
+            </div>
+          </div>
+
+          <button id="topbarLogoutBtn" class="police-btn police-btn-secondary police-btn-sm">
+            <span>Logout</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Tactical SOS Emergency Ticker -->
+      <div id="policeEmergencyTicker" class="police-emergency-ticker"></div>
+
+      <!-- Main Content -->
+      <main class="police-content-area">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 20px; font-weight: 800; color: #fff;">Tamper-Evident Law Enforcement Audit Trail</h1>
+            <p style="font-size: 12.5px; color: var(--police-text-secondary);">
+              Every status change, case assignment, evidence access, and emergency response action is logged permanently.
+            </p>
+          </div>
+          <div>
+            <button id="exportAuditBtn" class="police-btn police-btn-secondary">
+              <span>📥 Export Audit Log (CSV)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Audit Table -->
+        <div class="police-panel">
+          <div class="police-panel-header">
+            <h2 class="police-panel-title">System & Case Audit Events</h2>
+            <span class="police-badge badge-submitted">READ-ONLY LEGAL RECORD</span>
+          </div>
+
+          <div class="police-table-responsive">
+            <table class="police-table">
+              <thead>
+                <tr>
+                  <th>Event ID</th>
+                  <th>Timestamp</th>
+                  <th>Action</th>
+                  <th>Personnel</th>
+                  <th>Target Reference</th>
+                  <th>Action Details</th>
+                </tr>
+              </thead>
+              <tbody id="auditTrailTbody">
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 2rem; color: var(--police-text-muted);">
+                    Loading audit trail from database...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { requirePoliceAuth, setupPoliceAppShell } from './js/police-guards.js';
+    import { policeApi } from './js/police-api.js';
+
+    let auditLogs = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const officer = requirePoliceAuth();
+      if (!officer) return;
+
+      document.getElementById('topbarOfficerName').textContent = officer.name;
+      document.getElementById('topbarOfficerRank').textContent = `${officer.rank} (${officer.badgeNumber})`;
+      const initials = officer.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+      document.getElementById('topbarOfficerInitials').textContent = initials;
+
+      setupPoliceAppShell('audit');
+
+      await loadAuditLogs();
+
+      document.getElementById('exportAuditBtn').addEventListener('click', () => {
+        if (auditLogs.length === 0) return;
+        const headers = ['EventID', 'Timestamp', 'Action', 'Officer', 'TargetRef', 'Details'];
+        const rows = auditLogs.map(l => [
+          `"${l.id}"`,
+          `"${new Date(l.timestamp).toISOString()}"`,
+          `"${l.action}"`,
+          `"${l.officerName || l.adminEmail || ''}"`,
+          `"${l.targetReference || ''}"`,
+          `"${(l.details || '').replace(/"/g, '""')}"`
+        ]);
+        const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sheguard_police_audit_${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+    });
+
+    async function loadAuditLogs() {
+      const tbody = document.getElementById('auditTrailTbody');
+      try {
+        auditLogs = await policeApi.getAuditLogs();
+        if (auditLogs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--police-text-muted);">No audit entries recorded yet.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = auditLogs.map(l => `
+          <tr>
+            <td><span style="font-family: var(--font-mono); color: var(--police-cyan); font-size: 11px;">${escape(l.id)}</span></td>
+            <td style="font-family: var(--font-mono); font-size: 11.5px;">${new Date(l.timestamp).toLocaleString()}</td>
+            <td><span class="police-badge badge-under-investigation">${escape(l.action)}</span></td>
+            <td><strong>${escape(l.officerName || l.adminEmail || 'System')}</strong> <span style="font-size: 11px; color: var(--police-text-muted);">(${escape(l.officerBadge || 'SG-OFF')})</span></td>
+            <td><span style="font-family: var(--font-mono); color: #fff;">${escape(l.targetReference || 'N/A')}</span></td>
+            <td style="color: var(--police-text-secondary); max-width: 280px;">${escape(l.details || 'Action committed.')}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color: #EF4444; padding: 2rem;">Failed to load audit logs: ${escape(e.message)}</td></tr>`;
+      }
+    }
+
+    function escape(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[m]);
+    }
+  </script>
+</body>
+</html>

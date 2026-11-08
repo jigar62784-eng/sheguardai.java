@@ -1,0 +1,95 @@
+/**
+ * SheGuard Law Enforcement Portal - Responsive Layout & Mobile Drawer
+ */
+
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 230px;
+  }
+
+  .police-metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .police-sidebar {
+    transform: translateX(-100%);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.7);
+  }
+
+  .police-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .police-main-wrapper {
+    margin-left: 0;
+  }
+
+  .police-topbar {
+    padding: 0 1rem;
+  }
+
+  .police-clock-display {
+    display: none;
+  }
+
+  .police-officer-rank {
+    display: none;
+  }
+
+  .police-content-area {
+    padding: 1rem;
+  }
+
+  .police-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .police-search-box {
+    width: 100%;
+  }
+
+  .police-metrics-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .police-mobile-toggle {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .police-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .police-topbar-right {
+    gap: 0.5rem;
+  }
+
+  .police-officer-name {
+    display: none;
+  }
+
+  .police-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Mobile Toggle Button */
+.police-mobile-toggle {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--police-border);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+}

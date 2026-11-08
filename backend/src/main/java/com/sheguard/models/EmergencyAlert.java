@@ -8,8 +8,13 @@ public class EmergencyAlert {
     private String type; // SOS_EMERGENCY, ASSISTANCE_REQUEST
     private String message;
     private LocationCoordinates location;
-    private String status = "SENT"; // PENDING, SENT, DELIVERED, FAILED
+    private String status = "SENT"; // SENT, ACKNOWLEDGED, DISPATCHED, RESOLVED, CANCELLED
     private String providerStatusSummary;
+    private String acknowledgedBy;
+    private Long acknowledgedAt;
+    private String assignedOfficer;
+    private String dispatchNotes;
+    private Long resolvedAt;
     private long createdAt;
 
     public EmergencyAlert() {
@@ -42,6 +47,21 @@ public class EmergencyAlert {
 
     public String getProviderStatusSummary() { return providerStatusSummary; }
     public void setProviderStatusSummary(String providerStatusSummary) { this.providerStatusSummary = providerStatusSummary; }
+
+    public String getAcknowledgedBy() { return acknowledgedBy; }
+    public void setAcknowledgedBy(String acknowledgedBy) { this.acknowledgedBy = acknowledgedBy; }
+
+    public Long getAcknowledgedAt() { return acknowledgedAt; }
+    public void setAcknowledgedAt(Long acknowledgedAt) { this.acknowledgedAt = acknowledgedAt; }
+
+    public String getAssignedOfficer() { return assignedOfficer; }
+    public void setAssignedOfficer(String assignedOfficer) { this.assignedOfficer = assignedOfficer; }
+
+    public String getDispatchNotes() { return dispatchNotes; }
+    public void setDispatchNotes(String dispatchNotes) { this.dispatchNotes = dispatchNotes; }
+
+    public Long getResolvedAt() { return resolvedAt; }
+    public void setResolvedAt(Long resolvedAt) { this.resolvedAt = resolvedAt; }
 
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }

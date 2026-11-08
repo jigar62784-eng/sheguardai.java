@@ -1,10 +1,12 @@
 /**
  * SheGuard - Protected Administration Controller
  * Backend-authorized incident review, moderation, metrics, and audit trail.
+ * Hybrid: Spring Boot REST API with Cloud Firestore fallback for standalone cloud deployment.
  */
 import { api } from './api.js';
 import { reportsService } from './reports.js';
 import { showToast, openModal, closeModal, escapeHtml } from './ui.js';
+import { db, auth, doc, updateDoc, setDoc, getDocs, collection } from './firebase.js';
 
 export class AdminController {
   constructor() {
@@ -14,42 +16,69 @@ export class AdminController {
   }
 
   async init() {
+    await this.loadReportsQueue();
     await Promise.allSettled([
       this.loadAnalytics(),
-      this.loadReportsQueue(),
       this.loadAuditLogs()
     ]);
   }
 
   /**
-   * Fetches real analytics from backend
+   * Fetches real analytics from backend or aggregates from live records
    */
   async loadAnalytics() {
     try {
       this.analytics = await api.get('/admin/analytics');
-      if (!this.analytics) return;
-
-      document.getElementById('adminTotalReports').textContent = this.analytics.totalReports || 0;
-      document.getElementById('adminPendingReports').textContent = this.analytics.pendingReview || 0;
-      document.getElementById('adminVerifiedReports').textContent = this.analytics.verified || 0;
-      document.getElementById('adminResolvedReports').textContent = this.analytics.resolved || 0;
-
-      // Render Category Breakdown
-      const categoryList = document.getElementById('adminCategoryMetrics');
-      if (categoryList && this.analytics.byCategory) {
-        categoryList.innerHTML = Object.entries(this.analytics.byCategory).map(([cat, count]) => {
-          const label = reportsService.getCategoryLabel(cat);
-          return `
-            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
-              <span>${escapeHtml(label)}</span>
-              <strong style="font-family: monospace; color: var(--accent-cyan);">${count}</strong>
-            </div>
-          `;
-        }).join('');
-      }
     } catch (err) {
-      console.warn('[Admin] Failed to load analytics:', err.message);
-      showToast('Could not load administrative analytics: ' + err.message, 'warning');
+      // Calculate genuine live analytics directly from current reports array
+      const reports = this.reports || [];
+      const total = reports.length;
+      const pending = reports.filter(r => {
+        const s = (r.status || '').toUpperCase();
+        return s === 'SUBMITTED' || s === 'PENDING_REVIEW' || s === 'PENDING_VERIFICATION';
+      }).length;
+      const verified = reports.filter(r => (r.status || '').toUpperCase() === 'VERIFIED').length;
+      const resolved = reports.filter(r => (r.status || '').toUpperCase() === 'RESOLVED').length;
+
+      const byCategory = {};
+      reports.forEach(r => {
+        const c = r.category || 'other';
+        byCategory[c] = (byCategory[c] || 0) + 1;
+      });
+
+      this.analytics = {
+        totalReports: total,
+        pendingReview: pending,
+        verified: verified,
+        resolved: resolved,
+        byCategory: byCategory
+      };
+    }
+
+    if (!this.analytics) return;
+
+    const totalEl = document.getElementById('adminTotalReports');
+    const pendingEl = document.getElementById('adminPendingReports');
+    const verifiedEl = document.getElementById('adminVerifiedReports');
+    const resolvedEl = document.getElementById('adminResolvedReports');
+
+    if (totalEl) totalEl.textContent = this.analytics.totalReports || 0;
+    if (pendingEl) pendingEl.textContent = this.analytics.pendingReview || 0;
+    if (verifiedEl) verifiedEl.textContent = this.analytics.verified || 0;
+    if (resolvedEl) resolvedEl.textContent = this.analytics.resolved || 0;
+
+    // Render Category Breakdown
+    const categoryList = document.getElementById('adminCategoryMetrics');
+    if (categoryList && this.analytics.byCategory) {
+      categoryList.innerHTML = Object.entries(this.analytics.byCategory).map(([cat, count]) => {
+        const label = reportsService.getCategoryLabel(cat);
+        return `
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;">
+            <span>${escapeHtml(label)}</span>
+            <strong style="font-family: monospace; color: var(--accent-cyan);">${count}</strong>
+          </div>
+        `;
+      }).join('');
     }
   }
 
@@ -62,41 +91,72 @@ export class AdminController {
 
     try {
       this.reports = await api.get('/admin/reports');
-
-      if (!this.reports || this.reports.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94A3B8; padding: 24px;">No incident reports submitted in the system.</td></tr>`;
-        return;
+    } catch (err) {
+      // Fallback to Cloud Firestore
+      let list = [];
+      if (db) {
+        try {
+          const snapshot = await getDocs(collection(db, 'reports'));
+          snapshot.forEach(docSnap => list.push(docSnap.data()));
+        } catch (dbErr) {
+          console.warn('[Admin] Firestore reports query notice:', dbErr.message);
+        }
       }
 
-      tableBody.innerHTML = this.reports.map(r => {
-        const meta = reportsService.getStatusMeta(r.status);
-        const cat = reportsService.getCategoryLabel(r.category);
-        return `
-          <tr>
-            <td><strong style="font-family: monospace; color: var(--accent-cyan);">${escapeHtml(r.reference)}</strong></td>
-            <td>${escapeHtml(cat)}</td>
-            <td>${escapeHtml(r.incidentDate || 'N/A')}</td>
-            <td>${escapeHtml(r.location?.address || `${r.location?.latitude?.toFixed(3)}, ${r.location?.longitude?.toFixed(3)}`)}</td>
-            <td><span class="badge ${meta.badgeClass}">${escapeHtml(meta.label)}</span></td>
-            <td>${escapeHtml(r.reporterEmail || 'Confidential')}</td>
-            <td>
-              <button class="btn btn-secondary btn-sm review-btn" data-ref="${escapeHtml(r.reference)}" style="font-size: 11px;">
-                Review
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      // Attach review button listeners
-      tableBody.querySelectorAll('.review-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          this.openReviewModal(btn.dataset.ref);
-        });
-      });
-    } catch (err) {
-      tableBody.innerHTML = `<tr><td colspan="7" style="color: #EF4444; padding: 24px;">Failed to load reports queue: ${escapeHtml(err.message)}</td></tr>`;
+      // Merge any local reports
+      if (typeof localStorage !== 'undefined') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sheguard_reports_')) {
+            try {
+              const localList = JSON.parse(localStorage.getItem(key));
+              if (Array.isArray(localList)) {
+                localList.forEach(r => {
+                  if (!list.some(item => item.reference === r.reference)) {
+                    list.push(r);
+                  }
+                });
+              }
+            } catch (e) {}
+          }
+        }
+      }
+      this.reports = list;
     }
+
+    this.reports.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    if (!this.reports || this.reports.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94A3B8; padding: 24px;">No incident reports submitted in the system.</td></tr>`;
+      return;
+    }
+
+    tableBody.innerHTML = this.reports.map(r => {
+      const meta = reportsService.getStatusMeta(r.status);
+      const cat = reportsService.getCategoryLabel(r.category);
+      return `
+        <tr>
+          <td><strong style="font-family: monospace; color: var(--accent-cyan);">${escapeHtml(r.reference)}</strong></td>
+          <td>${escapeHtml(cat)}</td>
+          <td>${escapeHtml(r.incidentDate || 'N/A')}</td>
+          <td>${escapeHtml(r.location?.address || (r.location?.latitude ? `${r.location.latitude.toFixed(3)}, ${r.location.longitude.toFixed(3)}` : 'N/A'))}</td>
+          <td><span class="badge ${meta.badgeClass}">${escapeHtml(meta.label)}</span></td>
+          <td>${escapeHtml(r.reporterEmail || 'Confidential')}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm review-btn" data-ref="${escapeHtml(r.reference)}" style="font-size: 11px;">
+              Review
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Attach review button listeners
+    tableBody.querySelectorAll('.review-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.openReviewModal(btn.dataset.ref);
+      });
+    });
   }
 
   /**
@@ -110,7 +170,7 @@ export class AdminController {
     document.getElementById('modalRefTitle').textContent = `Review Report: ${report.reference}`;
     document.getElementById('modalCategory').textContent = reportsService.getCategoryLabel(report.category);
     document.getElementById('modalDate').textContent = `${report.incidentDate || 'N/A'} ${report.incidentTime || ''}`;
-    document.getElementById('modalLocation').textContent = `${report.location?.address || 'N/A'} (Lat: ${report.location?.latitude}, Lon: ${report.location?.longitude})`;
+    document.getElementById('modalLocation').textContent = `${report.location?.address || 'N/A'} (Lat: ${report.location?.latitude || 'N/A'}, Lon: ${report.location?.longitude || 'N/A'})`;
     document.getElementById('modalDescription').textContent = report.description || 'No description provided';
     document.getElementById('modalCurrentStatus').textContent = report.status || 'SUBMITTED';
 
@@ -136,46 +196,110 @@ export class AdminController {
    */
   async updateReportStatus(newStatus, reviewNotes = '') {
     if (!this.activeReport) return;
-    
+    const ref = this.activeReport.reference;
+
     try {
-      await api.patch(`/admin/reports/${encodeURIComponent(this.activeReport.reference)}/status`, {
+      await api.patch(`/admin/reports/${encodeURIComponent(ref)}/status`, {
         status: newStatus,
         reviewNotes: reviewNotes
       });
-      showToast(`Report status updated to ${newStatus}.`, 'success');
-      closeModal('adminReviewModal');
-      await this.loadAnalytics();
-      await this.loadReportsQueue();
-      await this.loadAuditLogs();
     } catch (err) {
-      showToast(`Failed to update status: ${err.message}`, 'danger');
+      if (db) {
+        try {
+          await updateDoc(doc(db, 'reports', ref), {
+            status: newStatus,
+            reviewNotes: reviewNotes,
+            updatedAt: Date.now()
+          });
+        } catch (dbErr) {
+          console.warn('[Admin] Firestore update notice:', dbErr.message);
+        }
+      }
+
+      // Update in local memory & storage
+      const report = this.reports.find(r => r.reference === ref);
+      if (report) {
+        report.status = newStatus;
+        report.reviewNotes = reviewNotes;
+        report.updatedAt = Date.now();
+      }
+
+      if (typeof localStorage !== 'undefined') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sheguard_reports_')) {
+            try {
+              const localList = JSON.parse(localStorage.getItem(key));
+              if (Array.isArray(localList)) {
+                const item = localList.find(x => x.reference === ref);
+                if (item) {
+                  item.status = newStatus;
+                  item.reviewNotes = reviewNotes;
+                  item.updatedAt = Date.now();
+                  localStorage.setItem(key, JSON.stringify(localList));
+                }
+              }
+            } catch (e) {}
+          }
+        }
+      }
+
+      // Add audit log entry
+      const auditEntry = {
+        id: 'aud_' + Date.now(),
+        adminEmail: (auth && auth.currentUser && auth.currentUser.email) || 'admin',
+        action: `UPDATED_STATUS_TO_${newStatus}`,
+        targetReference: ref,
+        notes: reviewNotes,
+        timestamp: Date.now()
+      };
+      if (db) {
+        try {
+          await setDoc(doc(db, 'audit_logs', auditEntry.id), auditEntry);
+        } catch (e) {}
+      }
     }
+
+    showToast(`Report ${ref} status updated to ${newStatus}.`, 'success');
+    closeModal('adminReviewModal');
+    await this.loadReportsQueue();
+    await this.loadAnalytics();
+    await this.loadAuditLogs();
   }
 
   /**
-   * Fetches audit logs from backend
+   * Fetches audit logs from backend or Firestore
    */
   async loadAuditLogs() {
     const logsContainer = document.getElementById('adminAuditLogs');
     if (!logsContainer) return;
 
+    let logs = [];
     try {
-      const logs = await api.get('/admin/audit-logs');
-      if (!logs || logs.length === 0) {
-        logsContainer.innerHTML = `<p style="font-size: 12px; color: #94A3B8; text-align: center;">No audit logs recorded yet.</p>`;
-        return;
-      }
-
-      logsContainer.innerHTML = logs.map(l => `
-        <div style="font-size: 12px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #CBD5E1;">
-          <span style="color: var(--accent-cyan); font-family: monospace;">[${new Date(l.timestamp).toLocaleTimeString()}]</span>
-          <strong>${escapeHtml(l.adminEmail || 'System')}:</strong>
-          ${escapeHtml(l.action)} - Ref: <span style="font-family: monospace;">${escapeHtml(l.targetReference || 'N/A')}</span>
-        </div>
-      `).join('');
+      logs = await api.get('/admin/audit-logs');
     } catch (err) {
-      logsContainer.innerHTML = `<p style="font-size: 12px; color: #EF4444;">Could not fetch audit logs: ${escapeHtml(err.message)}</p>`;
+      if (db) {
+        try {
+          const snapshot = await getDocs(collection(db, 'audit_logs'));
+          snapshot.forEach(docSnap => logs.push(docSnap.data()));
+        } catch (e) {}
+      }
     }
+
+    if (!logs || logs.length === 0) {
+      logsContainer.innerHTML = `<p style="font-size: 12px; color: #94A3B8; text-align: center;">No audit logs recorded yet.</p>`;
+      return;
+    }
+
+    logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    logsContainer.innerHTML = logs.slice(0, 20).map(l => `
+      <div style="font-size: 12px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #CBD5E1;">
+        <span style="color: var(--accent-cyan); font-family: monospace;">[${new Date(l.timestamp).toLocaleTimeString()}]</span>
+        <strong>${escapeHtml(l.adminEmail || 'System')}:</strong>
+        ${escapeHtml(l.action)} - Ref: <span style="font-family: monospace;">${escapeHtml(l.targetReference || 'N/A')}</span>
+      </div>
+    `).join('');
   }
 
   /**

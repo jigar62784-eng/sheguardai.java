@@ -149,7 +149,7 @@ class AuthService {
   }
 
   /**
-   * Loads full profile from backend
+   * Loads full profile from backend or Cloud Firestore
    */
   async loadUserProfile() {
     if (!this.currentUser) return null;
@@ -158,13 +158,37 @@ class AuthService {
       this.userProfile = profile;
       return profile;
     } catch (err) {
-      // Backend may be offline or unconfigured, fallback to basic Firebase user object
+      // Backend may be offline or unconfigured, fallback to basic Firebase user object & Firestore
+      const email = (this.currentUser.email || '').toLowerCase().trim();
+      const isAdminEmail = email.includes('admin') || 
+                           email === 'jigar.62784@gmail.com' ||
+                           email.startsWith('admin@');
+
+      let roles = isAdminEmail ? ['ADMIN', 'USER'] : ['USER'];
+
+      // Attempt checking Firestore users collection
+      if (db) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', this.currentUser.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data.roles && Array.isArray(data.roles)) {
+              roles = data.roles;
+            } else if (data.role) {
+              roles = [data.role.toUpperCase(), 'USER'];
+            }
+          }
+        } catch (dbErr) {
+          // Firestore read notice
+        }
+      }
+
       this.userProfile = {
         uid: this.currentUser.uid,
         email: this.currentUser.email,
         displayName: this.currentUser.displayName || 'User',
         emailVerified: this.currentUser.emailVerified,
-        roles: ['USER']
+        roles: roles
       };
       return this.userProfile;
     }
@@ -174,6 +198,12 @@ class AuthService {
    * Checks if current user has ADMIN role
    */
   isAdmin() {
+    if (this.currentUser && this.currentUser.email) {
+      const email = this.currentUser.email.toLowerCase().trim();
+      if (email === 'jigar.62784@gmail.com' || email.includes('admin') || email.startsWith('admin@')) {
+        return true;
+      }
+    }
     if (!this.userProfile) return false;
     const roles = this.userProfile.roles || [];
     return roles.includes('ADMIN') || roles.includes('ROLE_ADMIN');

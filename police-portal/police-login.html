@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Police & Law Enforcement Command Access — SheGuard</title>
+  <link rel="stylesheet" href="css/police.css">
+  <link rel="stylesheet" href="css/police-responsive.css">
+</head>
+<body class="police-theme" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem;">
+
+  <div style="width: 100%; max-width: 480px;">
+    
+    <!-- Security Seal & Brand -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <div style="width: 64px; height: 64px; border-radius: var(--radius-md); background: linear-gradient(135deg, #1D4ED8 0%, #38BDF8 100%); margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px rgba(56, 189, 248, 0.4); border: 2px solid rgba(255, 255, 255, 0.2);">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <h1 style="font-size: 20px; font-weight: 800; letter-spacing: 0.5px; color: #fff; text-transform: uppercase;">
+        SheGuard Police Command
+      </h1>
+      <p style="font-size: 12px; color: var(--police-cyan); font-family: var(--font-mono); margin-top: 4px;">
+        LAW ENFORCEMENT & PUBLIC SAFETY COMMAND NETWORK
+      </p>
+    </div>
+
+    <!-- Official Warning Notice -->
+    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+      <span style="font-size: 16px;">⚠️</span>
+      <div style="font-size: 11.5px; color: #FCA5A5; line-height: 1.4;">
+        <strong>RESTRICTED LAW ENFORCEMENT SYSTEM:</strong> Access is restricted strictly to authorized police officers, department administrators, and verified emergency dispatchers.
+      </div>
+    </div>
+
+    <!-- Login Panel -->
+    <div class="police-panel" style="box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);">
+      <div class="police-panel-header">
+        <h2 class="police-panel-title">Officer Authentication</h2>
+        <span class="police-badge badge-submitted">SECURE RBAC</span>
+      </div>
+      <div class="police-panel-body">
+        
+        <form id="policeLoginForm">
+          <div class="police-form-group">
+            <label class="police-form-label" for="policeEmail">Service Email / Officer ID</label>
+            <input type="email" id="policeEmail" class="police-input" required placeholder="e.g. priya.sharma@sheguard.police.gov" autocomplete="username">
+          </div>
+
+          <div class="police-form-group">
+            <label class="police-form-label" for="policePassword">Service Security Password</label>
+            <input type="password" id="policePassword" class="police-input" required placeholder="••••••••••••" autocomplete="current-password">
+          </div>
+
+          <div class="police-form-group">
+            <label class="police-form-label" for="policeDept">Command Division / Station</label>
+            <select id="policeDept" class="police-select">
+              <option value="Women Safety Wing (Central Division)">Women Safety Wing (Central Division)</option>
+              <option value="Cyber Crime Investigation Cell - Unit 4">Cyber Crime Investigation Cell - Unit 4</option>
+              <option value="Rapid Response Dispatch & Incident Verification">Rapid Response Dispatch 112</option>
+              <option value="State Police Directorate & Public Safety Command">State Police Headquarters Command</option>
+            </select>
+          </div>
+
+          <button type="submit" id="policeLoginSubmitBtn" class="police-btn police-btn-primary" style="width: 100%; padding: 0.75rem; font-size: 13.5px; margin-top: 0.5rem;">
+            <span>🛡️ Authenticate & Access Command Center</span>
+          </button>
+        </form>
+
+        <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--police-border-subtle);">
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--police-text-muted); font-weight: 700; margin-bottom: 0.75rem; text-align: center;">
+            ⚡ Quick-Station Demo Officer Logins
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <button type="button" class="police-btn police-btn-secondary police-btn-sm demo-login-btn" data-officer="OFF-101" style="justify-content: flex-start; text-align: left;">
+              <span>👮 <strong>Insp. Priya Sharma</strong></span>
+              <span class="police-badge badge-under-investigation" style="margin-left: auto;">POLICE ADMIN</span>
+            </button>
+
+            <button type="button" class="police-btn police-btn-secondary police-btn-sm demo-login-btn" data-officer="OFF-102" style="justify-content: flex-start; text-align: left;">
+              <span>🕵️ <strong>Officer Vikram Rao</strong></span>
+              <span class="police-badge badge-under-review" style="margin-left: auto;">INVESTIGATOR</span>
+            </button>
+
+            <button type="button" class="police-btn police-btn-secondary police-btn-sm demo-login-btn" data-officer="OFF-100" style="justify-content: flex-start; text-align: left;">
+              <span>⭐ <strong>Comm. Arvind Verma, IPS</strong></span>
+              <span class="police-badge badge-priority-critical" style="margin-left: auto;">SUPER ADMIN</span>
+            </button>
+
+            <button type="button" class="police-btn police-btn-secondary police-btn-sm demo-login-btn" data-officer="OFF-104" style="justify-content: flex-start; text-align: left;">
+              <span>📡 <strong>Officer S. Mukherjee</strong></span>
+              <span class="police-badge badge-verified" style="margin-left: auto;">MODERATOR / 112</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <div class="police-panel-header" style="justify-content: center; background: rgba(5, 8, 17, 0.4);">
+        <a href="../index.html" style="font-size: 12px; color: var(--police-cyan); text-decoration: none; display: flex; align-items: center; gap: 6px;">
+          <span>&larr; Exit to Public SheGuard Women Portal</span>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { policeAuth } from './js/police-auth.js';
+    import { requirePoliceGuest, showPoliceToast } from './js/police-guards.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Redirect if already logged in
+      if (!requirePoliceGuest()) return;
+
+      const form = document.getElementById('policeLoginForm');
+      const submitBtn = document.getElementById('policeLoginSubmitBtn');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Verifying Officer Credentials...</span>';
+
+        const email = document.getElementById('policeEmail').value.trim();
+        const password = document.getElementById('policePassword').value;
+        const dept = document.getElementById('policeDept').value;
+
+        const res = await policeAuth.login(email, password, dept);
+        if (res.success) {
+          showPoliceToast(`Officer ${res.officer.name} authenticated. Entering Command Center...`, 'success');
+          setTimeout(() => {
+            window.location.href = 'police-dashboard.html';
+          }, 600);
+        } else {
+          showPoliceToast(res.error, 'danger');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>🛡️ Authenticate & Access Command Center</span>';
+        }
+      });
+
+      // Demo login shortcuts
+      document.querySelectorAll('.demo-login-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const officerId = btn.dataset.officer;
+          const officer = policeAuth.loginDemoOfficer(officerId);
+          showPoliceToast(`Loaded test session: ${officer.rank} ${officer.name}`, 'info');
+          setTimeout(() => {
+            window.location.href = 'police-dashboard.html';
+          }, 400);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

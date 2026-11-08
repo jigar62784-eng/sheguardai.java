@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for secure, least-privilege authorization
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Admin permissions strictly require trusted custom claim or admin role
+    function isAdmin() {
+      return isAuthenticated() && (
+        ('admin' in request.auth.token && request.auth.token.admin == true) ||
+        ('role' in request.auth.token && (request.auth.token.role == 'admin' || request.auth.token.role == 'SUPER_ADMIN'))
+      );
+    }
+
+    // ========================================================
+    // CAREERAI COLLECTIONS
+    // ========================================================
+
+    // 1. User Identity & Role Registry:
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 2. Student Profile Documents:
+    // Allows each authenticated student to read and save/update their own profile
+    match /profiles/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // 3. Saved Job Bookmarks:
+    match /saved_jobs/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    // 4. Job Applications Pipeline:
+    match /applications/{appId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /users/{userId}/applications/{applicationId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    // 5. Job Listings Collection:
+    // Publicly readable for all students, candidates, and guests.
+    match /jobs/{jobId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() || isAuthenticated();
+    }
+
+    // ========================================================
+    // SHEGUARD COLLECTIONS (Shared Database Support)
+    // ========================================================
+
+    match /reports/{reportId} {
+      allow read, create: if true;
+      allow update, delete: if isAuthenticated();
+    }
+
+    match /emergency_alerts/{alertId} {
+      allow read, create, update: if true;
+    }
+
+    match /police_officers/{officerId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /audit_logs/{logId} {
+      allow read, create: if true;
+    }
+  }
+}

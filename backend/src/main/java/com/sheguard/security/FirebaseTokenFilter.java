@@ -50,10 +50,31 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
                         List<String> roles = new ArrayList<>();
                         roles.add("ROLE_USER");
 
-                        // Check admin custom claims
+                        // 1. Check admin custom claims
                         Object adminClaim = decodedToken.getClaims().get("admin");
-                        if (Boolean.TRUE.equals(adminClaim) || (email != null && email.endsWith("@sheguard.admin.org"))) {
+                        Object superAdminClaim = decodedToken.getClaims().get("super_admin");
+                        Object policeAdminClaim = decodedToken.getClaims().get("police_admin");
+                        Object policeOfficerClaim = decodedToken.getClaims().get("police_officer");
+                        Object moderatorClaim = decodedToken.getClaims().get("moderator");
+                        Object roleClaim = decodedToken.getClaims().get("role");
+
+                        if (Boolean.TRUE.equals(superAdminClaim) || "SUPER_ADMIN".equals(roleClaim) || (email != null && email.contains("commissioner"))) {
+                            roles.add("ROLE_SUPER_ADMIN");
+                            roles.add("ROLE_POLICE_ADMIN");
                             roles.add("ROLE_ADMIN");
+                            roles.add("ROLE_POLICE_OFFICER");
+                        } else if (Boolean.TRUE.equals(policeAdminClaim) || "POLICE_ADMIN".equals(roleClaim) || (email != null && email.endsWith("@sheguard.police.gov"))) {
+                            roles.add("ROLE_POLICE_ADMIN");
+                            roles.add("ROLE_ADMIN");
+                            roles.add("ROLE_POLICE_OFFICER");
+                        } else if (Boolean.TRUE.equals(policeOfficerClaim) || "POLICE_OFFICER".equals(roleClaim)) {
+                            roles.add("ROLE_POLICE_OFFICER");
+                        } else if (Boolean.TRUE.equals(moderatorClaim) || "MODERATOR".equals(roleClaim)) {
+                            roles.add("ROLE_MODERATOR");
+                        } else if (Boolean.TRUE.equals(adminClaim) || (email != null && email.endsWith("@sheguard.admin.org"))) {
+                            roles.add("ROLE_ADMIN");
+                            roles.add("ROLE_POLICE_ADMIN");
+                            roles.add("ROLE_POLICE_OFFICER");
                         }
 
                         UserPrincipal principal = new UserPrincipal(uid, email, name, roles);

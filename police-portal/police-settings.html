@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Station & Command Settings — SheGuard Police Portal</title>
+  <link rel="stylesheet" href="css/police.css">
+  <link rel="stylesheet" href="css/police-responsive.css">
+</head>
+<body class="police-theme">
+
+  <div class="police-app-shell">
+    
+    <!-- Command Sidebar -->
+    <aside class="police-sidebar">
+      <a href="police-dashboard.html" class="police-brand">
+        <div class="police-shield-icon">🛡️</div>
+        <div class="police-brand-title">
+          <div class="police-brand-name">
+            <span>SHEGUARD</span>
+            <span class="police-badge-pill">POLICE</span>
+          </div>
+          <span class="police-brand-sub">Law Enforcement Command</span>
+        </div>
+      </a>
+
+      <nav class="police-nav">
+        <div class="police-nav-section-label">Operations</div>
+        <a href="police-dashboard.html" class="police-nav-link" data-page="dashboard">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📊</span>
+            <span>Command Overview</span>
+          </div>
+        </a>
+        <a href="police-reports.html" class="police-nav-link" data-page="reports">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📁</span>
+            <span>Incident Registry</span>
+          </div>
+        </a>
+        <a href="police-investigation.html" class="police-nav-link" data-page="investigation">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🔍</span>
+            <span>Case Investigation</span>
+          </div>
+        </a>
+        <a href="police-incident-map.html" class="police-nav-link" data-page="map">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🗺️</span>
+            <span>Incident GIS Map</span>
+          </div>
+        </a>
+        <a href="police-emergency.html" class="police-nav-link" data-page="emergency">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🚨</span>
+            <span>Emergency SOS Monitor</span>
+          </div>
+          <span class="police-nav-counter alert-active" id="navEmergencyCounter">0</span>
+        </a>
+
+        <div class="police-nav-section-label">Intelligence & Admin</div>
+        <a href="police-analytics.html" class="police-nav-link" data-page="analytics">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📈</span>
+            <span>Crime Analytics</span>
+          </div>
+        </a>
+        <a href="police-officers.html" class="police-nav-link" data-page="officers">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">👮</span>
+            <span>Authorized Officers</span>
+          </div>
+        </a>
+        <a href="police-audit-logs.html" class="police-nav-link" data-page="audit">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📜</span>
+            <span>Audit Trail</span>
+          </div>
+        </a>
+        <a href="police-settings.html" class="police-nav-link active" data-page="settings">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">⚙️</span>
+            <span>Station Settings</span>
+          </div>
+        </a>
+      </nav>
+
+      <div class="police-sidebar-footer">
+        <div class="police-station-badge">
+          <span class="police-status-indicator"></span>
+          <div>
+            <div style="font-weight: 600; color: #fff;">State Police Network</div>
+            <div style="font-size: 10px; color: var(--police-text-muted);">Cloud Firestore Active</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="police-main-wrapper">
+      
+      <!-- Top Tactical Bar -->
+      <header class="police-topbar">
+        <div class="police-topbar-left">
+          <button id="policeMobileToggle" class="police-mobile-toggle" aria-label="Toggle menu">☰</button>
+          <div class="police-page-title-badge">
+            <span>STATION CONFIGURATION</span>
+            <span class="police-badge badge-submitted">ADMIN CONTROLS</span>
+          </div>
+          <div id="topbarMilitaryClock" class="police-clock-display">
+            <span>🕒 --:--:-- LOCAL</span>
+          </div>
+        </div>
+
+        <div class="police-topbar-right">
+          <button id="topbarDutyToggle" class="police-duty-btn">
+            <span class="police-status-indicator"></span>
+            <span>ON DUTY</span>
+          </button>
+
+          <div class="police-officer-pill">
+            <div class="police-officer-avatar" id="topbarOfficerInitials">PO</div>
+            <div class="police-officer-info">
+              <span class="police-officer-name" id="topbarOfficerName">Officer</span>
+              <span class="police-officer-rank" id="topbarOfficerRank">POLICE</span>
+            </div>
+          </div>
+
+          <button id="topbarLogoutBtn" class="police-btn police-btn-secondary police-btn-sm">
+            <span>Logout</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Tactical SOS Emergency Ticker -->
+      <div id="policeEmergencyTicker" class="police-emergency-ticker"></div>
+
+      <!-- Main Content -->
+      <main class="police-content-area" style="max-width: 900px;">
+        
+        <div style="margin-bottom: 1.5rem;">
+          <h1 style="font-size: 20px; font-weight: 800; color: #fff;">Police Station & System Configuration</h1>
+          <p style="font-size: 12.5px; color: var(--police-text-secondary);">
+            Command center parameters, backend connectivity diagnostics, and personnel profile.
+          </p>
+        </div>
+
+        <!-- Officer Profile Panel -->
+        <div class="police-panel">
+          <div class="police-panel-header">
+            <h2 class="police-panel-title">Authenticated Officer Profile</h2>
+            <span class="police-badge badge-verified">ACTIVE SESSION</span>
+          </div>
+          <div class="police-panel-body">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+              <div>
+                <span style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted); font-weight: 600;">Full Name</span>
+                <div id="profileOfficerName" style="font-size: 14px; font-weight: 700; color: #fff; margin-top: 2px;">-</div>
+              </div>
+              <div>
+                <span style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted); font-weight: 600;">Service Badge Number</span>
+                <div id="profileOfficerBadge" style="font-size: 14px; font-family: var(--font-mono); color: var(--police-cyan); margin-top: 2px;">-</div>
+              </div>
+              <div>
+                <span style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted); font-weight: 600;">Official Service Email</span>
+                <div id="profileOfficerEmail" style="font-size: 13px; color: var(--police-text-secondary); margin-top: 2px;">-</div>
+              </div>
+              <div>
+                <span style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted); font-weight: 600;">Assigned Role & Privileges</span>
+                <div id="profileOfficerRole" style="font-size: 13px; color: #fff; margin-top: 2px;">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Architecture & Connectivity Status -->
+        <div class="police-panel">
+          <div class="police-panel-header">
+            <h2 class="police-panel-title">Shared Backend & Cloud Infrastructure Status</h2>
+            <span class="police-badge badge-under-review">TWO-FRONTEND ARCHITECTURE</span>
+          </div>
+          <div class="police-panel-body">
+            
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: rgba(0,0,0,0.25); border-radius: var(--radius-sm); border: 1px solid var(--police-border);">
+                <div>
+                  <strong style="color: #fff;">1. Google Cloud Firestore (Shared Database)</strong>
+                  <div style="font-size: 11.5px; color: var(--police-text-muted);">Collections: reports, emergency_alerts, police_officers, audit_logs</div>
+                </div>
+                <span class="police-badge badge-verified">ONLINE / CONNECTED</span>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: rgba(0,0,0,0.25); border-radius: var(--radius-sm); border: 1px solid var(--police-border);">
+                <div>
+                  <strong style="color: #fff;">2. Spring Boot 3 & Java 21 REST API</strong>
+                  <div style="font-size: 11.5px; color: var(--police-text-muted);">Endpoint: http://localhost:8080/api (or Cloud Deployment)</div>
+                </div>
+                <span class="police-badge badge-verified">SECURED / READY</span>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: rgba(0,0,0,0.25); border-radius: var(--radius-sm); border: 1px solid var(--police-border);">
+                <div>
+                  <strong style="color: #fff;">3. Frontend 1 & Frontend 2 Isolation</strong>
+                  <div style="font-size: 11.5px; color: var(--police-text-muted);">User Portal (`/`) and Police Portal (`/police-portal/`) operate independently</div>
+                </div>
+                <span class="police-badge badge-verified">VERIFIED INDEPENDENT</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Cross Navigation Panel -->
+        <div class="police-panel">
+          <div class="police-panel-header">
+            <h3 class="police-panel-title" style="font-size: 13.5px;">Portal Switch</h3>
+          </div>
+          <div class="police-panel-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="font-weight: 600; color: #fff;">Switch to Public Women Safety Portal</div>
+              <div style="font-size: 12px; color: var(--police-text-muted);">Access citizen reporting, family circle tracking, and emergency features.</div>
+            </div>
+            <a href="../index.html" class="police-btn police-btn-secondary">
+              <span>Exit to User Portal &rarr;</span>
+            </a>
+          </div>
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { requirePoliceAuth, setupPoliceAppShell } from './js/police-guards.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const officer = requirePoliceAuth();
+      if (!officer) return;
+
+      document.getElementById('topbarOfficerName').textContent = officer.name;
+      document.getElementById('topbarOfficerRank').textContent = `${officer.rank} (${officer.badgeNumber})`;
+      const initials = officer.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+      document.getElementById('topbarOfficerInitials').textContent = initials;
+
+      setupPoliceAppShell('settings');
+
+      document.getElementById('profileOfficerName').textContent = officer.name;
+      document.getElementById('profileOfficerBadge').textContent = officer.badgeNumber;
+      document.getElementById('profileOfficerEmail').textContent = officer.email;
+      document.getElementById('profileOfficerRole').textContent = `${officer.role} (${officer.department})`;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Investigation Dossier — SheGuard Police Portal</title>
+  <link rel="stylesheet" href="css/police.css">
+  <link rel="stylesheet" href="css/police-responsive.css">
+  <!-- Leaflet CSS for Mini Tactical Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+</head>
+<body class="police-theme">
+
+  <div class="police-app-shell">
+    
+    <!-- Command Sidebar -->
+    <aside class="police-sidebar">
+      <a href="police-dashboard.html" class="police-brand">
+        <div class="police-shield-icon">🛡️</div>
+        <div class="police-brand-title">
+          <div class="police-brand-name">
+            <span>SHEGUARD</span>
+            <span class="police-badge-pill">POLICE</span>
+          </div>
+          <span class="police-brand-sub">Law Enforcement Command</span>
+        </div>
+      </a>
+
+      <nav class="police-nav">
+        <div class="police-nav-section-label">Operations</div>
+        <a href="police-dashboard.html" class="police-nav-link" data-page="dashboard">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📊</span>
+            <span>Command Overview</span>
+          </div>
+        </a>
+        <a href="police-reports.html" class="police-nav-link" data-page="reports">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📁</span>
+            <span>Incident Registry</span>
+          </div>
+        </a>
+        <a href="police-investigation.html" class="police-nav-link active" data-page="investigation">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🔍</span>
+            <span>Case Investigation</span>
+          </div>
+        </a>
+        <a href="police-incident-map.html" class="police-nav-link" data-page="map">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🗺️</span>
+            <span>Incident GIS Map</span>
+          </div>
+        </a>
+        <a href="police-emergency.html" class="police-nav-link" data-page="emergency">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">🚨</span>
+            <span>Emergency SOS Monitor</span>
+          </div>
+          <span class="police-nav-counter alert-active" id="navEmergencyCounter">0</span>
+        </a>
+
+        <div class="police-nav-section-label">Intelligence & Admin</div>
+        <a href="police-analytics.html" class="police-nav-link" data-page="analytics">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📈</span>
+            <span>Crime Analytics</span>
+          </div>
+        </a>
+        <a href="police-officers.html" class="police-nav-link" data-page="officers">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">👮</span>
+            <span>Authorized Officers</span>
+          </div>
+        </a>
+        <a href="police-audit-logs.html" class="police-nav-link" data-page="audit">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">📜</span>
+            <span>Audit Trail</span>
+          </div>
+        </a>
+        <a href="police-settings.html" class="police-nav-link" data-page="settings">
+          <div class="police-nav-link-content">
+            <span class="police-nav-icon">⚙️</span>
+            <span>Station Settings</span>
+          </div>
+        </a>
+      </nav>
+
+      <div class="police-sidebar-footer">
+        <div class="police-station-badge">
+          <span class="police-status-indicator"></span>
+          <div>
+            <div style="font-weight: 600; color: #fff;">State Police Network</div>
+            <div style="font-size: 10px; color: var(--police-text-muted);">Cloud Firestore Active</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="police-main-wrapper">
+      
+      <!-- Top Tactical Bar -->
+      <header class="police-topbar">
+        <div class="police-topbar-left">
+          <button id="policeMobileToggle" class="police-mobile-toggle" aria-label="Toggle menu">☰</button>
+          <div class="police-page-title-badge">
+            <span>CASE INVESTIGATION DOSSIER</span>
+            <span class="police-badge badge-under-investigation">FORENSIC REVIEW</span>
+          </div>
+          <div id="topbarMilitaryClock" class="police-clock-display">
+            <span>🕒 --:--:-- LOCAL</span>
+          </div>
+        </div>
+
+        <div class="police-topbar-right">
+          <button id="topbarDutyToggle" class="police-duty-btn">
+            <span class="police-status-indicator"></span>
+            <span>ON DUTY</span>
+          </button>
+
+          <div class="police-officer-pill">
+            <div class="police-officer-avatar" id="topbarOfficerInitials">PO</div>
+            <div class="police-officer-info">
+              <span class="police-officer-name" id="topbarOfficerName">Officer</span>
+              <span class="police-officer-rank" id="topbarOfficerRank">POLICE</span>
+            </div>
+          </div>
+
+          <button id="topbarLogoutBtn" class="police-btn police-btn-secondary police-btn-sm">
+            <span>Logout</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Tactical SOS Emergency Ticker -->
+      <div id="policeEmergencyTicker" class="police-emergency-ticker"></div>
+
+      <!-- Main Content -->
+      <main class="police-content-area" id="investigationContent">
+        
+        <!-- Case Header Banner -->
+        <div class="police-panel" style="margin-bottom: 1.5rem; border-top: 3px solid var(--police-cyan);">
+          <div class="police-panel-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding: 1.25rem 1.5rem;">
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted); font-weight: 600; letter-spacing: 0.5px;">
+                Official Case Docket Reference
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 4px;">
+                <h1 id="dossierRefTitle" style="font-size: 24px; font-weight: 800; font-family: var(--font-mono); color: #fff;">SG-LOADING</h1>
+                <span id="dossierPriorityBadge" class="police-badge badge-priority-high">HIGH</span>
+                <span id="dossierCategoryBadge" class="police-badge badge-under-review">CATEGORY</span>
+                <span id="dossierStatusBadge" class="police-badge badge-under-investigation">STATUS</span>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 0.65rem;">
+              <button id="openAssignModalBtn" class="police-btn police-btn-secondary">
+                <span>👮 Reassign Officer</span>
+              </button>
+              <button id="openStatusModalBtn" class="police-btn police-btn-primary">
+                <span>⚡ Change Case Status</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 1.5rem;">
+          
+          <!-- Left Column: Incident Dossier & Evidence -->
+          <div>
+            
+            <!-- Victim Statement & Incident Information -->
+            <div class="police-panel">
+              <div class="police-panel-header">
+                <h2 class="police-panel-title">1. Victim Statement & Legal Incident Details</h2>
+                <span class="police-badge badge-submitted">CONFIDENTIAL</span>
+              </div>
+              <div class="police-panel-body">
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                  <div>
+                    <span style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted); font-weight: 600;">Incident Date & Time</span>
+                    <div id="dossierDateTime" style="font-size: 13.5px; font-weight: 600; color: #fff; margin-top: 2px;">-</div>
+                  </div>
+                  <div>
+                    <span style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted); font-weight: 600;">Reporter Identity / Email</span>
+                    <div id="dossierReporter" style="font-size: 13px; color: var(--police-text-cyan); font-family: var(--font-mono); margin-top: 2px;">-</div>
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                  <span style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted); font-weight: 600;">Victim Incident Statement</span>
+                  <div id="dossierStatement" style="background: rgba(0,0,0,0.25); border: 1px solid var(--police-border); border-radius: var(--radius-sm); padding: 1rem; font-size: 13.5px; line-height: 1.6; color: #F1F5F9; margin-top: 6px;">
+                    Loading statement...
+                  </div>
+                </div>
+
+                <div style="font-size: 12px; color: var(--police-text-secondary); background: rgba(16, 185, 129, 0.08); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.2);">
+                  <span id="dossierConsent">Checking consent status...</span>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Scene Location & Tactical Mini Map -->
+            <div class="police-panel">
+              <div class="police-panel-header">
+                <h2 class="police-panel-title">2. Incident Scene GPS & Geographic Coordinates</h2>
+              </div>
+              <div class="police-panel-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                  <div>
+                    <span style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted); font-weight: 600;">Street / Landmark Address</span>
+                    <div id="dossierAddress" style="font-size: 13px; color: #fff; margin-top: 2px;">-</div>
+                  </div>
+                  <div>
+                    <span style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted); font-weight: 600;">High-Precision GPS Coordinates</span>
+                    <div id="dossierCoordinates" style="font-size: 13px; font-family: var(--font-mono); color: var(--police-cyan); margin-top: 2px;">-</div>
+                  </div>
+                </div>
+
+                <div id="dossierMiniMap" style="height: 220px; width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--police-border); background: #0B1120;"></div>
+              </div>
+            </div>
+
+            <!-- Forensic Evidence Vault -->
+            <div class="police-panel">
+              <div class="police-panel-header">
+                <h2 class="police-panel-title">3. Forensic Digital Evidence Vault</h2>
+                <span class="police-badge badge-verified">SHA-256 VERIFIED</span>
+              </div>
+              <div class="police-panel-body" id="dossierEvidenceBox">
+                Loading evidence records...
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Column: Case Officers & Timeline Log -->
+          <div>
+            
+            <!-- Officer & Department Assignment -->
+            <div class="police-panel">
+              <div class="police-panel-header">
+                <h3 class="police-panel-title" style="font-size: 13.5px;">Investigating Unit & Officer</h3>
+              </div>
+              <div class="police-panel-body">
+                <div style="margin-bottom: 0.85rem;">
+                  <span style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted); font-weight: 600;">Lead Investigating Officer</span>
+                  <div id="dossierOfficerName" style="font-size: 14px; font-weight: 700; color: #fff; margin-top: 2px;">-</div>
+                </div>
+                <div>
+                  <span style="font-size: 11px; text-transform: uppercase; color: var(--police-text-muted); font-weight: 600;">Assigned Station / Division</span>
+                  <div id="dossierDepartment" style="font-size: 12.5px; color: var(--police-text-secondary); margin-top: 2px;">-</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Investigation Timeline & Case Diary -->
+            <div class="police-panel">
+              <div class="police-panel-header">
+                <h3 class="police-panel-title" style="font-size: 13.5px;">Chronological Case Diary</h3>
+                <span class="police-badge badge-submitted">AUDIT SECURED</span>
+              </div>
+              <div class="police-panel-body">
+                
+                <div class="police-timeline" id="dossierTimelineContainer">
+                  <div style="text-align: center; padding: 1rem; color: var(--police-text-muted);">
+                    Loading case diary logs...
+                  </div>
+                </div>
+
+                <!-- Add Note Form -->
+                <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--police-border);">
+                  <div style="font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 0.5rem;">
+                    Append Official Entry to Case Diary:
+                  </div>
+                  <form id="addNoteForm">
+                    <div class="police-form-group">
+                      <textarea id="newInvestigationNote" class="police-textarea" rows="3" required placeholder="Record witness interview, forensic finding, or station action..."></textarea>
+                    </div>
+                    <button type="submit" class="police-btn police-btn-primary" style="width: 100%;">
+                      <span>✍️ Commit Entry to Legal Diary</span>
+                    </button>
+                  </form>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- Status Transition Modal -->
+  <div id="investigationStatusModal" class="police-modal-overlay">
+    <div class="police-modal" style="max-width: 480px;">
+      <div class="police-modal-header">
+        <h3 class="police-modal-title">Update Investigation Disposition</h3>
+        <button id="closeInvestigationStatusBtn" class="police-modal-close">&times;</button>
+      </div>
+      <div class="police-modal-body">
+        <div class="police-form-group">
+          <label class="police-form-label" for="investigationStatusSelect">Select Formal Disposition Status *</label>
+          <select id="investigationStatusSelect" class="police-select">
+            <option value="SUBMITTED">SUBMITTED (Citizen Report)</option>
+            <option value="PENDING_VERIFICATION">PENDING_VERIFICATION (Initial Triage)</option>
+            <option value="UNDER_REVIEW">UNDER_REVIEW (Moderator Verification)</option>
+            <option value="ASSIGNED">ASSIGNED (Officer Case Assigned)</option>
+            <option value="UNDER_INVESTIGATION">UNDER_INVESTIGATION (Active Field Investigation)</option>
+            <option value="VERIFIED">VERIFIED (Evidence & Facts Established)</option>
+            <option value="RESOLVED">RESOLVED (Prosecution / Case Closed)</option>
+            <option value="REJECTED">REJECTED (Unsubstantiated / Dismissed)</option>
+          </select>
+        </div>
+
+        <div class="police-form-group">
+          <label class="police-form-label" for="investigationStatusNotes">Official Case Diary Rationale *</label>
+          <textarea id="investigationStatusNotes" class="police-textarea" rows="3" required placeholder="State reason for status transition (Synchronizes to victim portal)..."></textarea>
+        </div>
+      </div>
+      <div class="police-modal-footer">
+        <button id="saveInvestigationStatusBtn" class="police-btn police-btn-primary">Commit Status & Notify User</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reassign Officer Modal -->
+  <div id="investigationAssignModal" class="police-modal-overlay">
+    <div class="police-modal" style="max-width: 480px;">
+      <div class="police-modal-header">
+        <h3 class="police-modal-title">Reassign Investigating Officer</h3>
+        <button id="closeInvestigationAssignBtn" class="police-modal-close">&times;</button>
+      </div>
+      <div class="police-modal-body">
+        <div class="police-form-group">
+          <label class="police-form-label" for="investigationOfficerSelect">Assign To Officer *</label>
+          <select id="investigationOfficerSelect" class="police-select"></select>
+        </div>
+
+        <div class="police-form-group">
+          <label class="police-form-label" for="investigationPrioritySelect">Case Priority Escalation</label>
+          <select id="investigationPrioritySelect" class="police-select">
+            <option value="CRITICAL">CRITICAL</option>
+            <option value="HIGH">HIGH</option>
+            <option value="MEDIUM" selected>MEDIUM</option>
+            <option value="LOW">LOW</option>
+          </select>
+        </div>
+      </div>
+      <div class="police-modal-footer">
+        <button id="saveInvestigationAssignBtn" class="police-btn police-btn-primary">Update Assignment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <script type="module">
+    import { requirePoliceAuth, setupPoliceAppShell } from './js/police-guards.js';
+    import { PoliceInvestigationController } from './js/police-investigation.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const officer = requirePoliceAuth();
+      if (!officer) return;
+
+      document.getElementById('topbarOfficerName').textContent = officer.name;
+      document.getElementById('topbarOfficerRank').textContent = `${officer.rank} (${officer.badgeNumber})`;
+      const initials = officer.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+      document.getElementById('topbarOfficerInitials').textContent = initials;
+
+      setupPoliceAppShell('investigation');
+
+      const ctrl = new PoliceInvestigationController();
+      await ctrl.init();
+    });
+  </script>
+</body>
+</html>

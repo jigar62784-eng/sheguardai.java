@@ -38,7 +38,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/health").permitAll()
                 .requestMatchers("/api/reports/public").permitAll()
                 .requestMatchers("/error").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/police/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "POLICE_ADMIN", "POLICE_OFFICER", "MODERATOR")
+                .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "POLICE_ADMIN")
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
             )
@@ -49,7 +50,7 @@ public class SecurityConfig {
                     Map<String, Object> error = Map.of(
                             "status", 401,
                             "error", "Unauthorized",
-                            "message", "Authentication required. Please log in with a valid Firebase ID Token.",
+                            "message", "Authentication required. Please log in with a valid Firebase ID Token or Police Credentials.",
                             "path", request.getRequestURI()
                     );
                     new ObjectMapper().writeValue(response.getOutputStream(), error);
@@ -60,7 +61,7 @@ public class SecurityConfig {
                     Map<String, Object> error = Map.of(
                             "status", 403,
                             "error", "Forbidden",
-                            "message", "Access denied: Administrator privileges required.",
+                            "message", "Access denied: Law Enforcement / Police Administrator privileges required.",
                             "path", request.getRequestURI()
                     );
                     new ObjectMapper().writeValue(response.getOutputStream(), error);

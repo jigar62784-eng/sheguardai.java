@@ -1,5 +1,9 @@
 package com.sheguard.models;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 public class IncidentReport {
     private String reference;
     private String reporterUid;
@@ -12,10 +16,15 @@ public class IncidentReport {
     private LocationCoordinates fuzzedLocation; // ~500m fuzzed coordinates for public display
     private String evidenceUrl;
     private String status = "SUBMITTED";
+    private String priority = "MEDIUM"; // CRITICAL, HIGH, MEDIUM, LOW
     private boolean consentGiven = false;
     private boolean isPublicSafeDisplayEligible = false;
     private String reviewNotes;
     private String reviewedBy;
+    private String assignedOfficerId;
+    private String assignedOfficerName;
+    private String assignedDepartment;
+    private List<Map<String, Object>> timeline = new ArrayList<>();
     private long createdAt;
     private long updatedAt;
 
@@ -57,6 +66,9 @@ public class IncidentReport {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
+    public String getPriority() { return priority; }
+    public void setPriority(String priority) { this.priority = priority; }
+
     public boolean isConsentGiven() { return consentGiven; }
     public void setConsentGiven(boolean consentGiven) { this.consentGiven = consentGiven; }
 
@@ -68,6 +80,18 @@ public class IncidentReport {
 
     public String getReviewedBy() { return reviewedBy; }
     public void setReviewedBy(String reviewedBy) { this.reviewedBy = reviewedBy; }
+
+    public String getAssignedOfficerId() { return assignedOfficerId; }
+    public void setAssignedOfficerId(String assignedOfficerId) { this.assignedOfficerId = assignedOfficerId; }
+
+    public String getAssignedOfficerName() { return assignedOfficerName; }
+    public void setAssignedOfficerName(String assignedOfficerName) { this.assignedOfficerName = assignedOfficerName; }
+
+    public String getAssignedDepartment() { return assignedDepartment; }
+    public void setAssignedDepartment(String assignedDepartment) { this.assignedDepartment = assignedDepartment; }
+
+    public List<Map<String, Object>> getTimeline() { return timeline; }
+    public void setTimeline(List<Map<String, Object>> timeline) { this.timeline = timeline; }
 
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }

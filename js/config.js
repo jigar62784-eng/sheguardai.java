@@ -69,13 +69,16 @@ export const CONFIG = {
     { id: 'other', label: 'Other Safety Incident' }
   ],
 
-  // Incident Statuses
+  // Incident Statuses (Synchronized across User Portal & Police Portal)
   INCIDENT_STATUSES: {
     submitted: { label: 'Submitted', badgeClass: 'badge-submitted' },
-    pending_review: { label: 'Pending Review', badgeClass: 'badge-pending' },
+    pending_verification: { label: 'Pending Verification', badgeClass: 'badge-pending' },
+    pending_review: { label: 'Pending Verification', badgeClass: 'badge-pending' }, // Legacy alias
     under_review: { label: 'Under Review', badgeClass: 'badge-under-review' },
-    verified: { label: 'Verified', badgeClass: 'badge-verified' },
-    rejected: { label: 'Rejected', badgeClass: 'badge-rejected' },
-    resolved: { label: 'Resolved', badgeClass: 'badge-resolved' }
+    assigned: { label: 'Officer Assigned', badgeClass: 'badge-assigned' },
+    under_investigation: { label: 'Under Investigation', badgeClass: 'badge-investigating' },
+    verified: { label: 'Officially Verified', badgeClass: 'badge-verified' },
+    resolved: { label: 'Resolved', badgeClass: 'badge-resolved' },
+    rejected: { label: 'Rejected', badgeClass: 'badge-rejected' }
   }
 };
