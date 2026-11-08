@@ -108,6 +108,13 @@
               <span>Settings & Privacy</span>
             </a>
           </li>
+          <li class="sidebar-item nav-admin-only" id="adminSidebarTab" style="display: none;">
+            <a href="admin.html" style="color: #A78BFA; font-weight: 600;">
+              <span>🛡️</span>
+              <span>Admin Console</span>
+              <span class="badge" style="background: rgba(124, 58, 237, 0.35); color: #E9D5FF; font-size: 10px; padding: 1px 6px; margin-left: auto;">ADMIN</span>
+            </a>
+          </li>
         </ul>
       </aside>
 
@@ -115,8 +122,11 @@
       <section class="dashboard-view">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; gap: var(--space-4);">
           <div>
-            <h1 id="userGreeting" style="font-size: var(--font-size-3xl); margin-bottom: var(--space-1);">Dashboard</h1>
-            <p style="font-size: var(--font-size-sm); color: var(--text-secondary);">Your real-time security status and personal incident reports.</p>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: var(--space-1);">
+              <h1 id="userGreeting" style="font-size: var(--font-size-3xl); margin: 0;">Dashboard</h1>
+              <span id="userRoleBadge" class="badge badge-verified" style="font-size: 11px; padding: 3px 10px; font-weight: 600;">🛡️ Citizen Account</span>
+            </div>
+            <p style="font-size: var(--font-size-sm); color: var(--text-secondary); margin: 0;">Your real-time security status, emergency help, and personal incident reports.</p>
           </div>
           <div style="display: flex; gap: var(--space-3);">
             <a href="report-incident.html" class="btn btn-primary">
@@ -124,6 +134,25 @@
             </a>
             <a href="emergency.html" class="btn btn-danger">
               <span>🚨 Emergency SOS</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Admin Quick Access Banner (Visible for Admin Roles) -->
+        <div id="adminAccessBanner" class="card" style="display: none; margin-bottom: var(--space-6); background: linear-gradient(135deg, rgba(124, 58, 237, 0.22) 0%, rgba(56, 189, 248, 0.12) 100%); border-color: rgba(124, 58, 237, 0.45);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(124, 58, 237, 0.35); display: flex; align-items: center; justify-content: center; font-size: 22px; border: 1px solid rgba(124, 58, 237, 0.5);">👑</div>
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <strong style="color: #fff; font-size: 15px;">Administrator & Moderation Access Active</strong>
+                  <span class="badge" style="background: rgba(124, 58, 237, 0.5); color: #E9D5FF; border: 1px solid #7C3AED; font-size: 10px;">ROLE_ADMIN</span>
+                </div>
+                <p style="font-size: 12.5px; color: #CBD5E1; margin: 3px 0 0;">You have authorized access to verify incidents, review private evidence dossiers, and inspect audit logs.</p>
+              </div>
+            </div>
+            <a href="admin.html" class="btn btn-primary" style="background: linear-gradient(135deg, #7C3AED 0%, #38BDF8 100%); border: none; font-weight: 600;">
+              <span>Go to Admin Dashboard &rarr;</span>
             </a>
           </div>
         </div>
@@ -172,13 +201,61 @@
         </div>
 
         <!-- Quick Access Banner -->
-        <div class="card" style="margin-bottom: var(--space-8); background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(56, 189, 248, 0.1) 100%); border-color: rgba(124, 58, 237, 0.3);">
+        <div class="card" style="margin-bottom: var(--space-6); background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(56, 189, 248, 0.1) 100%); border-color: rgba(124, 58, 237, 0.3);">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
             <div>
               <h3 style="color: #fff; margin-bottom: var(--space-1);">Live Family Locator Active</h3>
               <p style="font-size: var(--font-size-sm); margin: 0;">View nearby family members, calculate road routes via OSRM, or send emergency assistance requests.</p>
             </div>
             <a href="family-locator.html" class="btn btn-accent btn-sm">Open Live Locator Map</a>
+          </div>
+        </div>
+
+        <!-- Nearest Emergency Services Tracker (Live Police & Hospital Tracking) -->
+        <div class="card" style="margin-bottom: var(--space-6); border-color: rgba(56, 189, 248, 0.3);">
+          <div class="card-header" style="flex-wrap: wrap; gap: 12px; align-items: center;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h2 class="card-title" style="margin: 0; font-size: 1.15rem;">🚨 Nearest Emergency Services (Live Tracking)</h2>
+                <span id="trackerGpsStatus" class="badge badge-live" style="font-size: 10px;">GPS Active</span>
+              </div>
+              <p style="font-size: 12px; color: var(--text-secondary); margin: 3px 0 0;">
+                Live proximity tracker for verified police stations, women helpdesks, and emergency trauma hospitals.
+              </p>
+            </div>
+
+            <!-- Type Filter Tabs -->
+            <div style="display: flex; gap: 6px; background: var(--bg-tertiary); padding: 4px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+              <button type="button" id="tabShowPolice" class="btn btn-secondary btn-sm" style="font-size: 12px; padding: 5px 12px; background: rgba(59, 130, 246, 0.25); color: #93C5FD; border-color: #3B82F6;">
+                👮 Police Stations (<span id="countPoliceStations">0</span>)
+              </button>
+              <button type="button" id="tabShowHospitals" class="btn btn-secondary btn-sm" style="font-size: 12px; padding: 5px 12px; color: var(--text-secondary);">
+                🏥 Hospitals &amp; Trauma (<span id="countHospitals">0</span>)
+              </button>
+            </div>
+          </div>
+
+          <!-- Location Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(56, 189, 248, 0.05); border-bottom: 1px solid var(--border-subtle); font-size: 12px; flex-wrap: wrap; gap: 8px;">
+            <div id="currentLocationText" style="color: #E2E8F0; display: flex; align-items: center; gap: 6px;">
+              <span class="spinner" style="width: 14px; height: 14px;"></span>
+              <span>Acquiring real foreground GPS coordinates...</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" id="btnRefreshNearest" class="btn btn-outline btn-sm" style="font-size: 11px; padding: 3px 10px;">
+                🔄 Refresh Nearest
+              </button>
+              <a href="safety-map.html" class="btn btn-outline btn-sm" style="font-size: 11px; padding: 3px 10px; color: var(--accent-cyan); border-color: rgba(56, 189, 248, 0.4);">
+                🗺️ Full Safety Map
+              </a>
+            </div>
+          </div>
+
+          <!-- Emergency Services Grid -->
+          <div id="nearestServicesGrid" style="padding: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+            <div style="text-align: center; color: var(--text-muted); padding: 24px; grid-column: 1 / -1;">
+              <span class="spinner"></span> Locating nearest emergency police stations &amp; hospitals...
+            </div>
           </div>
         </div>
 

@@ -126,8 +126,11 @@ export class AdminController {
 
     this.reports.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
+    // Instantly update analytics counters based on retrieved reports
+    await this.loadAnalytics();
+
     if (!this.reports || this.reports.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94A3B8; padding: 24px;">No incident reports submitted in the system.</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94A3B8; padding: 24px;">No incident reports submitted in the system yet.</td></tr>`;
       return;
     }
 

@@ -39,6 +39,16 @@ class ApiClient {
    * Core request dispatcher with timeout and network diagnostics
    */
   async request(endpoint, options = {}) {
+    // If running on HTTPS origin (such as Vercel) and attempting to connect to insecure HTTP localhost,
+    // modern browsers block it as Mixed Content. Fail immediately (0ms) so Cloud Firestore fallback activates instantly.
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && this.baseUrl.startsWith('http://localhost')) {
+      throw new ApiError(
+        `Local Spring Boot server (${this.baseUrl}) cannot be reached from secure HTTPS deployment. Using Cloud Firestore fallback.`,
+        0,
+        { originalError: 'Mixed Content' }
+      );
+    }
+
     const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
     const authHeaders = await this.getAuthHeader();
     
